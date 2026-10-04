@@ -19,6 +19,7 @@
 - [Initial Credentials](#-initial-credentials)
 - [Reverse Proxy (Nginx / Apache)](#-reverse-proxy-nginx--apache)
 - [License](#-license)
+- [Acknowledgments & Development Note](#-acknowledgments--development-note)
 
 ## ✨ Key Features
 
