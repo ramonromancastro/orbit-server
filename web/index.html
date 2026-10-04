@@ -1,0 +1,2623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orbit Enterprise - Patch Management</title>
+    <!-- Tailwind CSS CDN -->
+    <!--<script src="https://cdn.tailwindcss.com"></script>-->
+    <link rel="stylesheet" href="assets/css/tailwind.css">
+    <!-- Vue.js 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js" crossorigin="anonymous"></script>
+    <!-- Chart.js -->
+    <!--<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>-->
+    <script src="assets/js/chart.js/chart.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+    <!-- Favicons e Identidad Visual -->
+    <link rel="icon" type="image/svg+xml" href="assets/icons/icon.svg">
+    <link rel="alternate icon" href="assets/icons/icon.svg">
+    <link rel="apple-touch-icon" href="assets/icons/icon.svg">
+
+    <!-- Manifest y Metaetiquetas de Color de Navegador -->
+    <link rel="manifest" href="assets/icons/site.webmanifest">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Orbit">
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-indigo-500 selection:text-white">
+
+<div id="app" class="min-h-screen flex flex-col">
+    
+    <!-- LOGIN SCREEN -->
+    <div v-if="!isAuthenticated" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-4">
+        <div class="bg-white/95 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700/40">
+            <div class="flex flex-col items-center mb-6">
+                <div class="w-16 h-16 bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-indigo-500/30 flex-shrink-0 mb-2">O</div>
+                <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Orbit Enterprise</h1>
+                <p class="text-sm text-slate-500 mt-1">Linux Fleet Patch Orchestration</p>
+            </div>
+            
+            <form @submit.prevent="login" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Username</label>
+                    <input v-model="loginForm.username" type="text" required placeholder="user" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Password</label>
+                    <input v-model="loginForm.password" type="password" required placeholder="••••••••" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition">
+                </div>
+                <button type="submit" :disabled="isLoading" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl shadow-md shadow-indigo-600/20 transition duration-150 disabled:opacity-50">
+                    {{ isLoading ? 'Authenticating...' : 'Sign In' }}
+                </button>
+                <p v-if="loginError" class="text-rose-600 text-xs mt-2 text-center font-medium">{{ loginError }}</p>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP: SIDEBAR + CONTENT LAYOUT -->
+    <div v-else class="flex-grow flex h-screen overflow-hidden">
+        <!-- SIDEBAR -->
+        <aside :class="isSidebarCollapsed ? 'w-20' : 'w-64'" class="bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-300 z-40 select-none">
+            
+            <!-- Brand / Header Adaptable -->
+            <div class="h-16 flex items-center border-b border-slate-800/80 transition-all duration-300"
+                 :class="isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-4'">
+                
+                <!-- Estado EXPANDIDO: Logo + Título + Botón Colapsar -->
+                <template v-if="!isSidebarCollapsed">
+                    <div class="flex items-center space-x-3 cursor-pointer overflow-hidden" @click="currentView = 'dashboard'">
+                        <div class="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold shadow-md shadow-indigo-500/20 flex-shrink-0">
+                            O
+                        </div>
+                        <span class="text-base font-bold tracking-tight text-white whitespace-nowrap">
+                            Orbit <span class="text-indigo-400 font-normal">Enterprise</span>
+                        </span>
+                    </div>
+                    <button @click="isSidebarCollapsed = true" 
+                            class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition flex-shrink-0"
+                            title="Collapse Sidebar">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                </template>
+
+                <!-- Estado COLAPSADO: Icono centrado con acción de expandir -->
+                <template v-else>
+                    <button @click="isSidebarCollapsed = false" 
+                            class="w-10 h-10 bg-indigo-600 hover:bg-indigo-700 rounded-xl flex items-center justify-center text-white font-bold shadow-md shadow-indigo-500/20 transition relative group"
+                            title="Expand Sidebar">
+                        <span>O</span>
+                        <!-- Indicador visual al pasar el ratón para expandir -->
+                        <div class="absolute inset-0 bg-slate-800/90 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-indigo-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
+                            </svg>
+                        </div>
+                    </button>
+                </template>
+
+            </div>
+
+            <!-- Nav Items -->
+            <div class="flex-grow overflow-y-auto custom-scrollbar py-4 px-3 space-y-6">
+                <!-- Group 1: Operations -->
+                <div>
+                    <div v-show="!isSidebarCollapsed" class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Operations</div>
+                    <nav class="space-y-1">
+                        <button @click="currentView = 'dashboard'" 
+                                :title="isSidebarCollapsed ? 'Dashboard' : ''"
+                                :class="currentView === 'dashboard' ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/20' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'"
+                                class="w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition">
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                            <span v-show="!isSidebarCollapsed" class="ml-3 font-medium">Dashboard</span>
+                        </button>
+
+                        <button @click="filterMode = 'all'; currentView = 'servers'" 
+                                :title="isSidebarCollapsed ? 'Servers' : ''"
+                                :class="currentView === 'servers' || currentView === 'details' ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/20' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'"
+                                class="w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition">
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path></svg>
+                            <span v-show="!isSidebarCollapsed" class="ml-3 font-medium">Managed Servers</span>
+                        </button>
+
+                        <button @click="currentView = 'packages'" 
+                                :title="isSidebarCollapsed ? 'Packages Advisory' : ''"
+                                :class="currentView === 'packages' ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/20' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'"
+                                class="w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition">
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                            <span v-show="!isSidebarCollapsed" class="ml-3 font-medium">Package Advisory</span>
+                        </button>
+
+                        <button @click="currentView = 'scheduled'" 
+                                :title="isSidebarCollapsed ? 'Scheduled Queue' : ''"
+                                :class="currentView === 'scheduled' ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/20' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'"
+                                class="w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition">
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span v-show="!isSidebarCollapsed" class="ml-3 font-medium">Scheduled Queue</span>
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Group 2: Surveillance -->
+                <div>
+                    <div v-show="!isSidebarCollapsed" class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Surveillance</div>
+                    <nav class="space-y-1">
+                        <button @click="currentView = 'security'" 
+                                :title="isSidebarCollapsed ? 'Security Audit' : ''"
+                                :class="currentView === 'security' ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/20' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'"
+                                class="w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition">
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                            <span v-show="!isSidebarCollapsed" class="ml-3 font-medium">Security Audit Log</span>
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Group 3: System (Administrator only) -->
+                <div v-if="userRole === 'administrator'">
+                    <div v-show="!isSidebarCollapsed" class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Management</div>
+                    <nav class="space-y-1">
+                        <button @click="currentView = 'users'" 
+                                :title="isSidebarCollapsed ? 'Users' : ''"
+                                :class="currentView === 'users' ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/20' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'"
+                                class="w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition">
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            <span v-show="!isSidebarCollapsed" class="ml-3 font-medium">Users Management</span>
+                        </button>
+
+                        <button @click="currentView = 'settings'" 
+                                :title="isSidebarCollapsed ? 'Configuration' : ''"
+                                :class="currentView === 'settings' ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/20' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'"
+                                class="w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition">
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <span v-show="!isSidebarCollapsed" class="ml-3 font-medium">System Configuration</span>
+                        </button>
+                    </nav>
+                </div>
+                <!-- Group: System Info -->
+                <div>
+                    <div v-show="!isSidebarCollapsed" class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">System</div>
+                    <nav class="space-y-1">
+                        <button @click="currentView = 'about'" 
+                                :title="isSidebarCollapsed ? 'About Orbit' : ''"
+                                :class="currentView === 'about' ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/20' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'"
+                                class="w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition">
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span v-show="!isSidebarCollapsed" class="ml-3 font-medium">About</span>
+                        </button>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- User Footer in Sidebar -->
+            <div class="p-3 border-t border-slate-800/80 bg-slate-950/40">
+                <div class="flex items-center space-x-3 overflow-hidden">
+                    <div class="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 font-bold flex items-center justify-center flex-shrink-0 border border-indigo-500/30">
+                        {{ (username || 'U')[0].toUpperCase() }}
+                    </div>
+                    <div v-show="!isSidebarCollapsed" class="overflow-hidden">
+                        <div class="text-xs font-bold text-white truncate">{{ username }}</div>
+                        <div class="text-[10px] uppercase font-mono tracking-wider font-semibold text-indigo-400">{{ userRole }}</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN VIEW WRAPPER -->
+        <div class="flex-grow flex flex-col overflow-hidden">
+            <!-- TOP BAR -->
+            <header class="bg-white border-b border-slate-200/80 h-16 flex items-center justify-between px-6 z-30 flex-shrink-0">
+                <div class="flex items-center space-x-3">
+                    <!-- Botón rápido para alternar la barra lateral desde la barra superior -->
+                    <button @click="isSidebarCollapsed = !isSidebarCollapsed" class="text-slate-500 hover:text-slate-800 p-1.5 rounded-lg hover:bg-slate-100 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <span class="text-sm font-semibold text-slate-600 capitalize">{{ currentView }}</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button @click="refreshCurrentView" :disabled="isLoading" class="bg-slate-50 hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-2 border border-slate-200 disabled:opacity-50">
+                        <svg class="w-4 h-4 text-slate-500" :class="{ 'animate-spin text-indigo-600': isLoading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        <span>{{ isLoading ? 'Syncing...' : 'Sync Fleet' }}</span>
+                    </button>
+                    <div class="h-5 w-px bg-slate-200"></div>
+                    <button @click="logout" class="text-slate-500 hover:text-rose-600 text-xs font-medium transition">Logout</button>
+                </div>
+            </header>
+
+            <!-- SCROLLABLE CONTENT BODY -->
+            <main class="flex-grow overflow-y-auto custom-scrollbar p-6 lg:p-8">
+                
+                <!-- VIEW 0: GLOBAL DASHBOARD -->
+                <div v-show="currentView === 'dashboard'">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Fleet Health Overview</h2>
+                        <p class="text-sm text-slate-500 mt-1">Real-time status of managed Linux endpoints and pending vulnerabilities.</p>
+                    </div>
+                    
+                    <!-- KPI CARDS GRID -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                        <div @click="filterBy('all')" class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-emerald-200 transition group">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Managed</p>
+                                <p class="mt-1.5 text-2xl font-bold transition" :class="nodes.length <= 0 ? 'text-amber-600' : 'text-emerald-600 group-hover:text-emerald-700'">{{ nodes.length }}</p>
+                            </div>
+                            <div class="p-3 rounded-xl transition" :class="nodes.length <= 0  ? 'bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white' : 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white'">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path></svg>
+                            </div>
+                        </div>
+                        
+                        <div @click="currentView = 'packages'" :class="totalSecurityUpdates > 0 ? 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-rose-200 transition group' : 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-emerald-200 transition group'">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Updates Availables</p>
+                                <p class="mt-1.5 text-2xl font-bold transition" :class="totalSecurityUpdates > 0 ? 'text-rose-600' : 'text-emerald-600 group-hover:text-emerald-700'">{{ totalSecurityUpdates }}</p>
+                            </div>
+                            <div class="p-3 rounded-xl transition" :class="totalSecurityUpdates > 0 ? 'bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white' : 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white'">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            </div>
+                        </div>
+                        
+                        <div @click="currentView = 'scheduled'" :class="allScheduledTasks.length > 0 ? 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-rose-200 transition group' : 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-emerald-200 transition group'">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Queued Jobs</p>
+                                 <p class="mt-1.5 text-2xl font-bold transition" :class="allScheduledTasks.length > 0 ? 'text-amber-600' : 'text-emerald-600 group-hover:text-emerald-700'">{{ allScheduledTasks.length }}</p>
+                            </div>
+                            <div class="p-3 rounded-xl transition" :class="allScheduledTasks.length > 0 ? 'bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white' : 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white'">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                        </div>
+
+                        <div @click="currentView = 'security'" :class="securityEvents.length > 0 ? 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-rose-200 transition group' : 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-emerald-200 transition group'">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Auth Violations</p>
+                                <p class="mt-1.5 text-2xl font-bold transition" :class="securityEvents.length > 0 ? 'text-rose-600' : 'text-emerald-600 group-hover:text-emerald-700'">{{ securityEvents.length }}</p>
+                            </div>
+                            <div class="p-3 rounded-xl transition" :class="securityEvents.length > 0 ? 'bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white' : 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white'">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                            </div>
+                        </div>
+
+                        <div @click="filterBy('failed')" :class="failedNodes.length > 0 ? 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-rose-200 transition group' : 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-emerald-200 transition group'">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Failed Executions</p>
+                                <p class="mt-1.5 text-2xl font-bold transition" :class="failedNodes.length > 0 ? 'text-rose-600' : 'text-emerald-600 group-hover:text-emerald-700'">{{ failedNodes.length }}</p>
+                            </div>
+                            <div class="p-3 rounded-xl transition" :class="failedNodes.length > 0 ? 'bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white' : 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white'">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                        </div>
+
+                        <div @click="filterBy('offline')" :class="offlineNodes.length > 0 ? 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-rose-200 transition group' : 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-emerald-200 transition group'">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Unreachable > {{ offlineThresholdDays }}d</p>
+                                <p class="mt-1.5 text-2xl font-bold transition" :class="offlineNodes.length > 0 ? 'text-rose-600 group-hover:text-rose-700' : 'text-emerald-600 group-hover:text-emerald-700'">{{ offlineNodes.length }}</p>
+                            </div>
+                            <div class="p-3 rounded-xl transition" :class="offlineNodes.length > 0 ? 'bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white' : 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white'">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3"></path></svg>
+                            </div>
+                        </div>
+
+                        <div @click="filterBy('notuptodate')" :class="notUpToDateNodes.length > 0 ? 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-rose-200 transition group' : 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-emerald-200 transition group'">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Not Compliant</p>
+                                <p class="mt-1.5 text-2xl font-bold transition" :class="notUpToDateNodes.length > 0 ? 'text-rose-600' : 'text-emerald-600 group-hover:text-emerald-700'">{{ notUpToDateNodes.length }}</p>
+                            </div>
+                            <div class="p-3 rounded-xl transition" :class="notUpToDateNodes.length > 0 ? 'bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white' : 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white'">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                        </div>
+                        
+                        <div @click="filterBy('reboot')" :class="rebootNodes.length > 0 ? 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-amber-200 transition group' : 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-emerald-200 transition group'">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Pending Reboots</p>
+                                <p class="mt-1.5 text-2xl font-bold transition" :class="rebootNodes.length > 0 ? 'text-amber-600 group-hover:text-amber-700' : 'text-emerald-600 group-hover:text-emerald-700'">{{ rebootNodes.length }}</p>
+                            </div>
+                            <div class="p-3 rounded-xl transition" :class="rebootNodes.length > 0 ? 'bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white' : 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white'">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CHARTS ROW -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-6">
+                            <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-700 mb-4">Top Vulnerable Hosts</h3>
+                            <div class="relative h-64"><canvas id="updatesChart"></canvas></div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-6">
+                            <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-700 mb-4">Security Packages</h3>
+                            <div class="relative h-64 flex justify-center"><canvas id="securityTypeChart"></canvas></div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-6">
+                            <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-700 mb-4">Operating Systems</h3>
+                            <div class="relative h-64 flex justify-center"><canvas id="osChart"></canvas></div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-6">
+                            <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-700 mb-4">Agent Versions</h3>
+                            <div class="relative h-64 flex justify-center"><canvas id="agentChart"></canvas></div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-6">
+                            <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-700 mb-4">Servers Tags</h3>
+                            <div class="relative h-64"><canvas id="tagsChart"></canvas></div>
+                        </div>
+                    </div>
+                    
+                    <!-- GLOBAL LOG HISTORY -->
+                    <div v-if="globalTaskResults.length > 0" class="mt-6 bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden w-full">
+                        <div class="px-5 py-4 border-b border-slate-100">
+                            <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Global Execution Audit Log</h3>
+                        </div>
+                        <table class="min-w-full divide-y divide-slate-100 text-left">
+                            <thead class="bg-slate-50/60 font-semibold text-slate-500 uppercase text-xs">
+                                <tr>
+                                    <th class="py-2.5 px-4">Completion Time</th>
+                                    <th class="py-2.5 px-4">Endpoint</th>
+                                    <th class="py-2.5 px-4">Task ID</th>
+                                    <th class="py-2.5 px-4">Exit Status</th>
+                                    <th class="py-2.5 px-4 text-right">Audit</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm">
+                                <tr v-for="res in globalTaskResults" :key="res.node_uuid + res.task_id" class="hover:bg-slate-50/70 transition">
+                                    <td class="py-2.5 px-4 text-slate-600">{{ formatTime(res.timestamp) }}</td>
+                                    <td class="py-2.5 px-4 font-medium text-slate-900">{{ res.fqdn }}</td>
+                                    <td class="py-2.5 px-4 font-mono text-slate-400 truncate max-w-[120px]">{{ res.task_id }}</td>
+                                    <td class="py-2.5 px-4 font-semibold capitalize" :class="res.status === 'success' ? 'text-emerald-600' : 'text-rose-600'">{{ res.status }}</td>
+                                    <td class="py-2.5 px-4 text-right">
+                                        <button @click="openLogModal(res)" class="text-indigo-600 hover:text-indigo-800 font-medium">View Terminal</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- VIEW 1: SERVER LIST -->
+                <div v-show="currentView === 'servers'">
+                    <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Managed Servers</h2>
+                            <span v-if="filterMode !== 'all'" class="inline-flex items-center bg-indigo-50 border border-indigo-200/80 text-indigo-700 px-2.5 py-1 rounded-lg text-xs font-medium">
+                                {{ getFilterName }}
+                                <button @click="filterMode = 'all'" class="ml-1.5 hover:text-indigo-900 font-bold">&times;</button>
+                            </span>
+                            <p class="text-sm text-slate-500 mt-1">All managed Linux endpoints and their status.</p>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4 w-full md:w-auto">
+                            <button @click="exportServersCSV" 
+                                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-200">
+                                <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                Export CSV
+                            </button>
+                            <button @click="exportServersJSON" 
+                                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-200">
+                                <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                                </svg>
+                                Export JSON
+                            </button>
+                            <div class="flex items-center bg-white px-3 py-1.5 rounded-xl shadow-sm border border-slate-200 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition">
+                                <svg class="w-4 h-4 text-slate-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                <input type="text" v-model="searchHostname" placeholder="Filter by hostname..." class="text-xs border-none bg-transparent focus:outline-none w-full md:w-48 text-slate-700">
+                            </div>
+
+                            <div v-if="selectedNodeUuids.length > 0 && userRole !== 'user'" class="flex items-center flex-wrap gap-2 bg-indigo-50 p-2 rounded-xl border border-indigo-100">
+                                <span class="text-xs font-semibold text-indigo-800 ml-2 mr-2">{{ selectedNodeUuids.length }} selected</span>
+                                
+                                <label class="inline-flex items-center text-xs text-slate-600 cursor-pointer">
+                                    <input type="checkbox" v-model="isBulkScheduled" class="rounded border-slate-300 text-indigo-600 mr-1.5">
+                                    Schedule At
+                                </label>
+                                <input v-if="isBulkScheduled" type="datetime-local" v-model="bulkScheduleDate" class="text-xs border border-slate-200 rounded-lg p-1.5 bg-white text-slate-700">                            
+
+                                <button @click="bulkQuickScheduleAll" :disabled="(isBulkScheduled && !bulkScheduleDate)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-700 disabled:opacity-40 transition shadow-sm">
+                                    Update
+                                </button>
+                                <button @click="bulkRebootAll" :disabled="(isBulkScheduled && !bulkScheduleDate)" class="bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-rose-700 disabled:opacity-40 transition shadow-sm">
+                                    Reboot
+                                </button>
+                                <button @click="bulkQuickCancelAll" class="bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-amber-700 transition shadow-sm">
+                                    Clear Queue
+                                </button>
+                                <button v-if="userRole !== 'user'" @click="bulkDecommissionAll" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1.5 shadow-sm">
+                                    <span>Decommission</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden">
+                        <table class="min-w-full divide-y divide-slate-200/80 text-left">
+                            <thead class="bg-slate-50/80 font-semibold text-slate-500 uppercase tracking-wider text-xs">
+                                <tr>
+                                    <th class="py-3.5 px-4"><input type="checkbox" @change="toggleAllNodes" :checked="isAllNodesSelected" :disabled="userRole === 'user'" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"></th>
+                                    <th class="py-3.5 px-4">Endpoint Hostname</th>
+                                    <th class="py-3.5 px-4">Agent Version</th>
+                                    <th class="py-3.5 px-4">Distribution & Kernel</th>
+                                    <th class="py-3.5 px-4">Last Check-in</th>
+                                    <th class="py-3.5 px-4 text-center">Status</th>
+                                    <th class="py-3.5 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm">
+                                <tr v-for="node in sortedFilteredNodes" :key="node.uuid" class="hover:bg-slate-50/70 transition">
+                                    <td class="py-3.5 px-4"><input type="checkbox" :value="node.uuid" v-model="selectedNodeUuids" :disabled="userRole === 'user'" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"></td>
+                                    <td class="py-3.5 px-4">
+                                        <div class="font-medium text-slate-900 flex items-center">{{ node.fqdn || 'Unknown' }}</div>
+                                        <div class="text-xs text-slate-400 font-mono mt-0.5">{{ node.ip_address }}</div>
+                                        <div class="flex items-center mt-1.5 space-x-1.5">
+                                            <span v-if="node.last_action_status === 'failed'" class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">FAIL</span>
+                                            <span v-if="node.has_scheduled_tasks" class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">QUEUED</span>
+                                            <span v-if="node.needs_reboot" class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-50 text-red-700 border border-red-200">REBOOT REQUIRED</span>
+                                        </div>
+                                        <div v-if="node.tags && node.tags.length > 0" class="flex items-center mt-1.5 space-x-1.5">
+                                            <span v-for="res in node.tags" class="px-1.5 py-0.5 text-[10px] font-semibold bg-slate-50 text-slate-700 border border-slate-200">{{ res }}</span>
+                                        </div>                                        
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <div class="text-slate-700 font-medium">{{ node.agent_version }}</div>
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <div class="text-slate-700 font-medium">{{ node.os_version }}</div>
+                                        <div class="text-xs text-slate-400 font-mono mt-0.5">{{ node.kernel_version }}</div>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-xs text-slate-500">{{ formatTime(node.timestamp) }}</td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <span v-if="node.available_updates && node.available_updates.length > 0" :class="hasSecurityUpdates(node.available_updates) ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-amber-50 text-amber-700 border-amber-200'" class="px-2.5 py-1 inline-flex text-xs font-semibold rounded-full border">
+                                            {{ node.available_updates.length }} updates
+                                        </span>
+                                        <span v-else class="px-2.5 py-1 inline-flex text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            Clean
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right space-x-2">
+                                        <button v-if="userRole !== 'user' && node.available_updates && node.available_updates.length > 0 && !node.has_scheduled_tasks" @click="quickScheduleAll(node)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-700 transition">Update All</button>
+                                        <button v-if="userRole !== 'user' && node.has_scheduled_tasks" @click="quickCancelAll(node)" class="bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-amber-700 transition shadow-sm">Clear Queue</button>
+                                        <button @click="viewNodeDetails(node)" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-indigo-700 transition">Manage</button>
+                                    </td>
+                                </tr>
+                                <tr v-if="sortedFilteredNodes.length === 0">
+                                    <td colspan="6" class="py-12 text-center text-slate-400 text-sm">No servers match the selected criteria.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- VIEW 3: GLOBAL PACKAGES ADVISORY -->
+                <div v-show="currentView === 'packages'">
+                    <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Package Advisory</h2>
+                            <p class="text-sm text-slate-500 mt-1">Aggregated software vulnerabilities and pending versions across all servers.</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden">
+                        <table class="min-w-full divide-y divide-slate-200/80 text-left">
+                            <thead class="bg-slate-50/80 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <tr>
+                                    <th class="py-3.5 px-4">Package</th>
+                                    <th class="py-3.5 px-4">Target Version</th>
+                                    <th class="py-3.5 px-4">Severity Type</th>
+                                    <th class="py-3.5 px-4 text-center">Impact Scope</th>
+                                    <th class="py-3.5 px-4 text-right">Global Orchestration</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm">
+                                <tr v-for="pkg in sortedGlobalPackage" :key="pkg.name + pkg.version" class="hover:bg-slate-50/70 transition">
+                                    <td class="py-3.5 px-4 font-mono font-medium text-slate-900">{{ pkg.name }}.{{ pkg.arch }}</td>
+                                    <td class="py-3.5 px-4 font-mono text-xs text-slate-500">{{ pkg.version }}-{{ pkg.release }}</td>
+                                    <td class="py-3.5 px-4">
+                                        <!--
+                                        <span v-if="pkg.is_security" class="px-2 py-0.5 text-xs font-semibold rounded-full bg-rose-50 text-rose-700 border border-rose-200">Security</span>
+                                        <span v-else class="px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-100 text-slate-700 border border-slate-200">Bugfix</span>
+                                        -->
+                                        <span :class="securityLevelBadgeClass(pkg.security_level)" class="px-2.5 py-1 inline-flex text-xs font-semibold rounded-full border">
+                                            {{ pkg.security_level }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <div class="flex flex-col items-center gap-1">
+                                            <a @click="filterBy('package', `${pkg.name}-${pkg.version}-${pkg.release}.${pkg.arch}`)" class="bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full text-xs font-semibold cursor-pointer">
+                                                {{ pkg.affected_nodes_count }} servers
+                                            </a>
+                                            <a v-if="getUnqueuedNodes(pkg).length > 0 && getUnqueuedNodes(pkg).length < pkg.affected_nodes_count" 
+                                                  class="text-[11px] font-medium text-amber-600">
+                                                {{ getUnqueuedNodes(pkg).length }} pending queue
+                                            </a>
+                                        </div>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right">
+                                        <template v-if="userRole !== 'user'">
+                                            <button v-if="getUnqueuedNodes(pkg).length > 0" 
+                                                    @click="deployPackageGlobally(pkg)" 
+                                                    class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-700 transition">
+                                                <span v-if="getUnqueuedNodes(pkg).length === pkg.affected_nodes_count">
+                                                    Update All ({{ pkg.affected_nodes_count }})
+                                                </span>
+                                                <span v-else>
+                                                    Update Remaining ({{ getUnqueuedNodes(pkg).length }})
+                                                </span>
+                                            </button>
+                                            <span v-else class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                                Queued
+                                            </span>
+                                        </template>
+                                        <span v-else class="text-xs text-slate-400 italic">Read-only</span>
+                                    </td>
+                                </tr>
+                                <tr v-if="sortedGlobalPackage.length === 0">
+                                    <td colspan="5" class="py-12 text-center text-slate-400 text-sm">No pending patch advisories across the fleet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- VIEW 5: SCHEDULED QUEUE -->
+                <div v-show="currentView === 'scheduled'">
+                    <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Scheduled Queue</h2>
+                            <p class="text-sm text-slate-500 mt-1">Pending update jobs enqueued across the fleet awaiting execution.</p>
+                        </div>
+                        
+                        <div v-if="selectedTaskKeys.length > 0 && userRole !== 'user'" class="flex items-center flex-wrap gap-2 bg-indigo-50 p-2 rounded-xl border border-indigo-100">
+                            <span class="text-xs font-semibold text-indigo-800 ml-2 mr-2">{{ selectedTaskKeys.length }} selected</span>
+                            <button @click="bulkCancelScheduledTasks" class="bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-2 rounded-xl text-xs font-medium shadow-sm transition flex items-center space-x-1.5">
+                                Clear Queue
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden">
+                        <table class="min-w-full divide-y divide-slate-200/80 text-left text-sm">
+                            <thead class="bg-slate-50/80 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <tr>
+                                    <th class="py-3.5 px-4 w-10">
+                                        <input type="checkbox" @change="toggleAllScheduledTasks" :checked="isAllTasksSelected" :disabled="userRole === 'user'" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                    </th>
+                                    <th class="py-3.5 px-4">Endpoint Hostname</th>
+                                    <th class="py-3.5 px-4">Execution Window</th>
+                                    <th class="py-3.5 px-4">Packages</th>
+                                    <th class="py-3.5 px-4">Action</th>
+                                    <th class="py-3.5 px-4 text-right">Revoke</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm">
+                                <tr v-for="t in sortedAllScheduledTasks" :key="t.node_uuid + t.task_id" class="hover:bg-slate-50/70 transition">
+                                    <td class="py-3.5 px-4">
+                                        <input type="checkbox" :value="t.node_uuid + '|' + t.task_id" v-model="selectedTaskKeys" :disabled="userRole === 'user'" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                    </td>
+                                    <td class="py-3.5 px-4 font-medium text-slate-900">
+                                        {{ t.fqdn }}
+                                        <div class="text-[11px] font-mono text-slate-400">{{ t.node_uuid }}</div>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-xs text-slate-600">
+                                        {{ t.scheduled_at ? formatTime(t.scheduled_at) : 'Immediate (Next Check-in)' }}
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <div class="flex flex-wrap gap-1">
+                                            <span v-for="pkg in t.packages" :key="pkg" class="bg-slate-100 border border-slate-200/80 font-mono text-[11px] text-slate-700 px-1.5 py-0.5 rounded">
+                                                {{ pkg }}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="px-2 py-0.5 text-[10px] font-semibold uppercase rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                            {{ t.action }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right space-x-2">
+                                        <button @click="viewNodeFromFqdn(t.fqdn);" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-indigo-700 transition">Manage</button>
+                                        <button v-if="userRole !== 'user'" @click="cancelSingleScheduledTask(t)" class="bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-amber-700 transition shadow-sm">
+                                            Clear Queue
+                                        </button>
+                                        <span v-else class="text-xs text-slate-400 italic">Locked</span>
+                                    </td>
+                                </tr>
+                                <tr v-if="sortedAllScheduledTasks.length === 0">
+                                    <td colspan="6" class="py-12 text-center text-slate-400 text-sm">No scheduled tasks currently queued across the fleet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- VIEW 4: SECURITY AUDIT -->
+                <div v-show="currentView === 'security'">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Security Audit Log</h2>
+                        <p class="text-sm text-slate-500 mt-1">Real-time surveillance of invalid authentication attempts and access violations.</p>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden">
+                        <table class="min-w-full divide-y divide-slate-200/80 text-left">
+                            <thead class="bg-slate-50/80 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <tr>
+                                    <th class="py-3.5 px-4">Event Timestamp</th>
+                                    <th class="py-3.5 px-4">Source IP</th>
+                                    <th class="py-3.5 px-4">Method & Endpoint</th>
+                                    <th class="py-3.5 px-4">Violation Details</th>
+                                    <th class="py-3.5 px-4 text-right">Provided Token</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm font-mono">
+                                <tr v-for="ev in securityEvents" :key="ev.event_id" class="hover:bg-slate-50/70 transition">
+                                    <td class="py-3.5 px-4 text-slate-500 font-sans">{{ formatTime(ev.timestamp) }}</td>
+                                    <td class="py-3.5 px-4 text-slate-900 font-bold">{{ ev.client_ip }}</td>
+                                    <td class="py-3.5 px-4 text-slate-600">
+                                        <span class="bg-slate-100 px-1.5 py-0.5 rounded mr-1 text-[10px] font-semibold">{{ ev.method }}</span>
+                                        <span>{{ ev.endpoint }}</span>
+                                    </td>
+                                    <td class="py-3.5 px-4 font-sans">
+                                        <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                                            {{ ev.reason }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right text-slate-400">
+                                        {{ ev.token_preview }}
+                                    </td>
+                                </tr>
+                                <tr v-if="securityEvents.length === 0">
+                                    <td colspan="5" class="py-12 text-center text-slate-400 font-sans text-sm">No authentication anomalies or access violations detected.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- VIEW 2: SERVER DETAILS -->
+                <div v-if="currentView === 'details' && selectedNode">
+                    <div class="mb-6 flex justify-between items-center">
+                        <button @click="currentView = 'servers'" class="text-slate-600 hover:text-slate-900 flex items-center text-sm font-medium transition">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                            Return to Servers
+                        </button>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-xs font-mono text-slate-400">UUID: {{ selectedNode.uuid }}</span>
+                            <button v-if="userRole !== 'user'" @click="decommissionServer(selectedNode)" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1.5 shadow-sm">
+                                <span>Decommission Server</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- OVERVIEW METRIC CARDS -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
+                            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Hostname</div>
+                            <div class="text-base font-bold text-slate-900 truncate mt-1">{{ selectedNode.fqdn }}</div>
+                            <div class="text-xs text-slate-500 font-mono mt-0.5">{{ selectedNode.ip_address }}</div>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
+                            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Agent Information</div>
+                            <div class="text-base font-bold text-slate-900 truncate mt-1">{{ selectedNode.agent_version || 'Unknown' }}</div>
+                            <div class="text-base font-bold text-slate-900 truncate mt-1">
+                                <span v-for="tag in selectedNode.tags" :key="tag" class="px-2 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 mr-2">{{ tag }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
+                            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Platform</div>
+                            <div class="text-sm font-semibold text-slate-800 truncate mt-1">{{ selectedNode.os_version }}</div>
+                            <div class="text-xs text-slate-500 mt-0.5">Uptime: {{ formatUptime(selectedNode.uptime_seconds) }}</div>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
+                            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Resources</div>
+                            <div class="text-sm font-semibold text-slate-800 mt-1">{{ selectedNode.cpu_cores }} Cores / {{ selectedNode.ram_total_mb }} MB</div>
+                            <div class="text-xs text-slate-500 font-mono mt-0.5 truncate">{{ selectedNode.kernel_version }}</div>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
+                            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Last Agent Task</div>
+                            <div class="text-sm font-semibold capitalize mt-1" :class="selectedNode.last_action_status === 'failed' ? 'text-rose-600' : 'text-emerald-600'">{{ selectedNode.last_action_status }}</div>
+                            <div class="text-xs text-slate-400 truncate mt-0.5">{{ selectedNode.last_action_message || 'None' }}</div>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
+                            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Reboot Status</div>
+                            <div class="text-sm font-semibold mt-1" :class="selectedNode.needs_reboot ? 'text-amber-600' : 'text-emerald-600'">
+                                {{ selectedNode.needs_reboot ? 'Reboot Required' : 'Up-to-date' }}
+                            </div>
+                            <div class="text-xs text-slate-400 mt-0.5">{{ selectedNode.needs_reboot ? 'Pending kernel updates' : 'No restart needed' }}</div>
+                        </div>
+                    </div>
+
+                    <!-- SCHEDULED QUEUE -->
+                    <div v-if="pendingTasks.length > 0" class="bg-white rounded-xl shadow-sm border border-amber-200/80 mb-6 overflow-hidden">
+                        <div class="px-5 py-3.5 bg-amber-50/50 border-b border-amber-100 flex justify-between items-center">
+                            <h3 class="text-xs font-semibold uppercase tracking-wider text-amber-800">Scheduled Task Queue ({{ pendingTasks.length }})</h3>
+                        </div>
+                        <table class="min-w-full divide-y divide-slate-100 text-left text-sm">
+                            <thead class="bg-slate-50/60 text-xs font-semibold text-slate-500 uppercase">
+                                <tr>
+                                    <th class="py-2.5 px-4">Execution Window</th>
+                                    <th class="py-2.5 px-4">Target Packages</th>
+                                    <th class="py-2.5 px-4">Action</th>
+                                    <th class="py-2.5 px-4 text-right">Revoke</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm">
+                                <tr v-for="task in pendingTasks" :key="task.task_id">
+                                    <td class="py-2.5 px-4 text-xs font-medium text-slate-700">
+                                        {{ task.scheduled_at ? formatTime(task.scheduled_at) : 'Immediate (Next Check-in)' }}
+                                    </td>
+                                    <td class="py-2.5 px-4 text-xs font-mono">
+                                        <span v-for="pkg in task.packages" :key="pkg" class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 mr-1">{{ pkg }}</span>
+                                    </td>
+                                    <td class="py-2.5 px-4">
+                                        <span class="px-2 py-0.5 text-[10px] font-semibold uppercase rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                            {{ task.action }}
+                                        </span>
+                                    </td>
+                                    <td class="py-2.5 px-4 text-right">
+                                        <button v-if="userRole !== 'user'" @click="cancelTask(task.task_id)" class="bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-amber-700 transition shadow-sm">Clear Queue</button>
+                                        <span v-else class="text-xs text-slate-400 italic">Locked</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- PENDING UPDATES TABLE -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 mb-6 overflow-hidden">
+                        <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center flex-wrap gap-3">
+                            <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Pending Updates ({{ selectedNode.available_updates ? selectedNode.available_updates.length : 0 }})</h3>
+                            <div v-if="userRole !== 'user'" class="flex items-center space-x-3">
+                                <label class="inline-flex items-center text-xs text-slate-600 cursor-pointer">
+                                    <input type="checkbox" v-model="isScheduled" class="rounded border-slate-300 text-indigo-600 mr-1.5">
+                                    Schedule At
+                                </label>
+                                <input v-if="isScheduled" type="datetime-local" v-model="scheduleDate" class="text-xs border border-slate-200 rounded-lg p-1.5 bg-white text-slate-700">
+                                
+                                <button v-if="selectedNode.available_updates && selectedNode.available_updates.length > 0" 
+                                        @click="scheduleUpdate(selectedPackages)" 
+                                        :disabled="selectedPackages.length === 0 || (isScheduled && !scheduleDate)" 
+                                        class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-700 disabled:opacity-40 transition shadow-sm">
+                                    {{ isScheduled ? 'Schedule Update (' + selectedPackages.length + ')' : 'Update Now (' + selectedPackages.length + ')' }}
+                                </button>
+                                <button @click="scheduleRebootTask" 
+                                        :disabled="(isScheduled && !scheduleDate)" 
+                                        class="bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-rose-700 disabled:opacity-40 transition shadow-sm">
+                                    {{ isScheduled ? 'Schedule Reboot' : 'Reboot Now' }}
+                                </button>
+                            </div>
+                        </div>
+                        <table class="min-w-full divide-y divide-slate-100 text-left text-sm">
+                            <thead class="bg-slate-50/60 text-xs font-semibold text-slate-500 uppercase">
+                                <tr>
+                                    <th class="py-2.5 px-4 w-10"><input type="checkbox" @change="toggleAllPackages" :checked="isAllSelected" :disabled="userRole === 'user'" class="rounded border-slate-300 text-indigo-600"></th>
+                                    <th class="py-2.5 px-4">Package</th>
+                                    <th class="py-2.5 px-4">Available Version</th>
+                                    <th class="py-2.5 px-4">Severity Type</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 font-mono text-sm">
+                                <tr v-for="pkg in sortedAvailableUpdates" :key="pkg.name" class="hover:bg-slate-50/50">
+                                    <td class="py-2.5 px-4"><input type="checkbox" :value="pkg.name" v-model="selectedPackages" :disabled="userRole === 'user' || isPackageScheduled(pkg.name)" class="rounded border-slate-300 text-indigo-600"></td>
+                                    <td class="py-2.5 px-4 text-slate-900 font-medium">
+                                        {{ pkg.name }}.{{ pkg.arch }}
+                                        <span v-if="isPackageScheduled(pkg.name)" class="ml-2 font-sans text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded">Queued</span>
+                                    </td>
+                                    <td class="py-2.5 px-4 text-slate-500">{{ pkg.version }}-{{ pkg.release }}</td>
+                                    <td class="py-2.5 px-4 font-sans">
+                                        <!--
+                                        <span v-if="pkg.is_security" class="px-2.5 py-1 inline-flex text-xs font-semibold rounded-full bg-rose-50 text-rose-700 border border-rose-200">Security</span>
+                                        <span v-else class="px-2.5 py-1 inline-flex text-xs font-semibold rounded-full bg-slate-50 text-slate-700 border border-slate-200">Bugfix</span>
+                                        -->
+                                        <span :class="securityLevelBadgeClass(pkg.security_level)" class="px-2.5 py-1 inline-flex text-xs font-semibold rounded-full border">
+                                            {{ pkg.security_level }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- LOG HISTORY -->
+                    <div v-if="taskResults.length > 0" class="bg-white rounded-xl shadow-sm border border-slate-200/80 mb-6 overflow-hidden">
+                        <div class="px-5 py-4 border-b border-slate-100">
+                            <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Execution Audit Log</h3>
+                        </div>
+                        <table class="min-w-full divide-y divide-slate-100 text-left text-sm">
+                            <thead class="bg-slate-50/60 text-xs font-semibold text-slate-500 uppercase">
+                                <tr>
+                                    <th class="py-2.5 px-4">Completion Time</th>
+                                    <th class="py-2.5 px-4">Task ID</th>
+                                    <th class="py-2.5 px-4">Exit Status</th>
+                                    <th class="py-2.5 px-4 text-right">Audit</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm">
+                                <tr v-for="res in taskResults" :key="res.task_id">
+                                    <td class="py-2.5 px-4 text-slate-600">{{ formatTime(res.timestamp) }}</td>
+                                    <td class="py-2.5 px-4 font-mono text-slate-400">{{ res.task_id }}</td>
+                                    <td class="py-2.5 px-4 font-semibold capitalize" :class="res.status === 'success' ? 'text-emerald-600' : 'text-rose-600'">{{ res.status }}</td>
+                                    <td class="py-2.5 px-4 text-right">
+                                        <button @click="openLogModal(res)" class="text-indigo-600 hover:text-indigo-800 font-medium">View Terminal</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- VIEW 6: SETTINGS (ADMINISTRATOR ONLY) -->
+                <div v-show="currentView === 'settings' && userRole === 'administrator'">
+                    <div class="mb-6 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">System Configuration</h2>
+                            <p class="text-sm text-slate-500 mt-1">Manage runtime parameters, security limits, and retention policies.</p>
+                        </div>
+                    </div>
+
+                    <div v-if="settingsFeedback" class="mb-6 p-4 rounded-xl text-sm font-medium border"
+                         :class="settingsFeedback.success ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'">
+                        {{ settingsFeedback.message }}
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 divide-y divide-slate-100">
+                        <div v-for="item in systemSettings" :key="item.key" class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div class="max-w-xl">
+                                <label class="text-sm font-semibold text-slate-900">{{ item.label }}</label>
+                                <div class="text-xs font-mono text-indigo-600 mt-0.5">ORBIT_{{ item.key.toUpperCase() }}</div>
+                                <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">{{ item.description }}</p>
+                                
+                                <div v-if="['jwt_secret'].includes(item.key)" class="mt-2.5 flex items-start space-x-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200/80 text-amber-800">
+                                    <svg class="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                    </svg>
+                                    <span class="text-[11px] leading-tight">
+                                        <strong>Important:</strong> Modifying this parameter requires manually restarting the systemd service (<code>systemctl restart orbit-server</code>).
+                                    </span>
+                                </div>
+                                <div v-if="['root_path'].includes(item.key)" class="mt-2.5 flex items-start space-x-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200/80 text-amber-800">
+                                    <svg class="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                    </svg>
+                                    <span class="text-[11px] leading-tight">
+                                        <strong>Important:</strong> Modifying this parameter requires manually restarting the systemd service (<code>systemctl restart orbit-server</code>) and updating the corresponding proxy directives in Apache/Nginx.
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="w-full md:w-80">
+                                <div v-if="item.type === 'password'" class="space-y-2">
+                                    <div class="relative flex items-center">
+                                        <input :type="showApiToken ? 'text' : 'password'" 
+                                               v-model="settingsForm[item.key]" 
+                                               readonly
+                                               class="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-500 cursor-not-allowed focus:outline-none transition">
+                                        
+                                        <button type="button" 
+                                                @click="showApiToken = !showApiToken" 
+                                                class="absolute right-2.5 text-slate-400 hover:text-slate-600 focus:outline-none"
+                                                :title="showApiToken ? 'Hide Token' : 'Show Token'">
+                                            <svg v-if="showApiToken" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path>
+                                            </svg>
+                                            <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                                                              
+                                <input v-else 
+                                       type="text" 
+                                       readonly
+                                       v-model="settingsForm[item.key]" 
+                                       class="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-500 cursor-not-allowed focus:outline-none transition">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 7: USERS (ADMINISTRATOR ONLY) -->
+                <div v-show="currentView === 'users' && userRole === 'administrator'">
+                    <div class="mb-6 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">User Management</h2>
+                            <p class="text-sm text-slate-500 mt-1">Control access roles and operators for the Orbit web dashboard.</p>
+                        </div>
+                        <button @click="openCreateUserModal" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm">
+                            + New User
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden">
+                        <table class="min-w-full divide-y divide-slate-100 text-left text-sm">
+                            <thead class="bg-slate-50/80 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <tr>
+                                    <th class="py-3.5 px-4">Username</th>
+                                    <th class="py-3.5 px-4">Role</th>
+                                    <th class="py-3.5 px-4">Created At</th>
+                                    <th class="py-3.5 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr v-for="u in userList" :key="u.id" class="hover:bg-slate-50/50">
+                                    <td class="py-3.5 px-4 font-semibold text-slate-900">{{ u.username }}</td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider"
+                                              :class="{
+                                                  'bg-indigo-50 text-indigo-700 border border-indigo-200': u.role === 'administrator',
+                                                  'bg-amber-50 text-amber-700 border border-amber-200': u.role === 'operator',
+                                                  'bg-slate-100 text-slate-700 border border-slate-200': u.role === 'user'
+                                              }">
+                                            {{ u.role }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-slate-500">{{ formatTime(u.created_at) }}</td>
+                                    <td class="py-3.5 px-4 text-right space-x-3">
+                                        <button @click="openEditUserModal(u)" class="text-indigo-600 hover:text-indigo-800 text-xs font-semibold">
+                                            Edit
+                                        </button>
+                                        <button v-if="u.username !== 'admin' && u.username !== username" @click="deleteUser(u)" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">
+                                            Delete
+                                        </button>
+                                        <span v-else class="text-xs text-slate-400 italic">Protected</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- VIEW 8: ABOUT ORBIT ENTERPRISE -->
+                <div v-show="currentView === 'about'" class="max-w-4xl space-y-6">
+                    <!-- Header Card -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-indigo-500/30 flex-shrink-0"> O </div>
+                            <div>
+                                <div class="flex items-center space-x-3">
+                                    <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Orbit Enterprise</h2>
+                                    <span class="bg-indigo-50 text-indigo-700 text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full border border-indigo-200">{{ appVersion }}</span>
+                                </div>
+                                <p class="text-sm text-slate-500 mt-1">Linux Fleet Patch Orchestration & Vulnerability Management Console</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2">
+                            <span :class="systemHealth.colorClass" class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold border transition-colors">
+                                <span :class="systemHealth.dotClass" class="w-2 h-2 rounded-full mr-2 animate-pulse"></span>
+                                {{ systemHealth.label }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Overview Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Software Description -->
+                        <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-3">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Product Overview</h3>
+                            <p class="text-sm text-slate-600 leading-relaxed">
+                                <strong>Orbit Enterprise</strong> is a centralized control platform designed to automate monitoring, auditing, and mass deployment of security advisories and software packages across heterogeneous Linux server fleets (RHEL, Debian, Ubuntu, CentOS, Rocky, and AlmaLinux).
+                            </p>
+                            <div class="pt-2 flex flex-wrap gap-2 text-xs font-mono text-slate-500">
+                                <span class="bg-slate-100 px-2 py-1 rounded">FastAPI Engine</span>
+                                <span class="bg-slate-100 px-2 py-1 rounded">Vue 3 Core</span>
+                                <span class="bg-slate-100 px-2 py-1 rounded">RBAC Security</span>
+                                <span class="bg-slate-100 px-2 py-1 rounded">Zero-Dependency Agent</span>
+                            </div>
+                        </div>
+
+                        <!-- Key Capabilities -->
+                        <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-3">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Core Capabilities</h3>
+                            <ul class="text-sm text-slate-600 space-y-2">
+                                <li class="flex items-start">
+                                    <svg class="w-4 h-4 text-emerald-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <span>Automated scanning for standard updates and critical security advisories.</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <svg class="w-4 h-4 text-emerald-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <span>Time-based execution windows for orchestrated rollouts and controlled system reboots.</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <svg class="w-4 h-4 text-emerald-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    <span>Real-time execution auditing and Zero-Trust access violation tracking.</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Metadata & Credits Table -->
+                    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Specifications & Legal Notice</h3>
+                        </div>
+                        <div class="divide-y divide-slate-100 text-sm">
+                            <div class="px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                <span class="text-slate-500">Author & Lead Maintainer</span>
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-semibold text-slate-900">Ramón Román Castro</span>
+                                    <a href="https://www.rrc2software.org" target="_blank" rel="noopener noreferrer" class="text-xs text-indigo-600 hover:text-indigo-800 underline">rrc2software</a>
+                                </div>
+                            </div>
+                            <div class="px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                <span class="text-slate-500">Distribution / Edition</span>
+                                <span class="font-medium text-slate-800">Enterprise Edition (On-Premises Fleet)</span>
+                            </div>
+                            <div class="px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                <span class="text-slate-500">Licensing</span>
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-semibold text-slate-900">Apache License 2.0</span>
+                                    <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener noreferrer" class="text-xs text-indigo-600 hover:text-indigo-800 underline">View terms</a>
+                                </div>
+                            </div>
+                            <div class="px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                <span class="text-slate-500">Technology Stack</span>
+                                <div class="flex items-center space-x-3 text-xs font-mono">
+                                    <a href="https://fastapi.tiangolo.com/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline">FastAPI Docs</a>
+                                    <span class="text-slate-300">•</span>
+                                    <a href="https://vuejs.org/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline">Vue.js 3</a>
+                                    <span class="text-slate-300">•</span>
+                                    <a href="https://tailwindcss.com/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline">Tailwind CSS</a>
+                                    <span class="text-slate-300">•</span>
+                                    <a href="https://www.chartjs.org/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline">Chart.js</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- CREATE USER MODAL -->
+    <div v-if="showCreateUserModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-base font-bold text-slate-900">Create Web User</h3>
+                <button @click="showCreateUserModal = false" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+            </div>
+            <form @submit.prevent="submitCreateUser" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Username</label>
+                    <input v-model="newUserForm.username" type="text" required class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white">
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-600">Password</label>
+                        <button type="button" @click="generateRandomPasswordForNew" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium inline-flex items-center space-x-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            <span>Generate</span>
+                        </button>
+                    </div>
+                    <div class="relative flex items-center">
+                        <input :type="showNewPassword ? 'text' : 'password'" 
+                               v-model="newUserForm.password" 
+                               @input="newUserForm.isGenerated = false"
+                               required minlength="6" 
+                               class="w-full pl-3.5 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono">
+                        <button type="button" @click="showNewPassword = !showNewPassword" class="absolute right-2.5 text-slate-400 hover:text-slate-600">
+                            <svg v-if="showNewPassword" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path></svg>
+                            <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Campo confirmación (oculto si fue autogenerada) -->
+                <div v-if="!newUserForm.isGenerated">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Confirm Password</label>
+                    <input :type="showNewPassword ? 'text' : 'password'" 
+                           v-model="newUserForm.confirmPassword" 
+                           required minlength="6" 
+                           placeholder="Repeat password"
+                           class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono">
+                    <p v-if="newUserForm.confirmPassword && newUserForm.password !== newUserForm.confirmPassword" class="text-rose-600 text-xs mt-1">
+                        Passwords do not match.
+                    </p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Role</label>
+                    <select v-model="newUserForm.role" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white">
+                        <option value="user">User (Read-only)</option>
+                        <option value="operator">Operator (Actions permitted)</option>
+                        <option value="administrator">Administrator (Full control)</option>
+                    </select>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-4">
+                    <button type="button" @click="showCreateUserModal = false" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800">Cancel</button>
+                    <button type="submit" :disabled="isSubmittingUser || (!newUserForm.isGenerated && newUserForm.password !== newUserForm.confirmPassword)" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-sm transition disabled:opacity-50">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- EDIT USER MODAL -->
+    <div v-if="showEditUserModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-base font-bold text-slate-900">Edit User: {{ editUserForm.originalUsername }}</h3>
+                <button @click="showEditUserModal = false" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+            </div>
+            <form @submit.prevent="submitEditUser" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Username</label>
+                    <input v-model="editUserForm.username" type="text" required 
+                           :disabled="editUserForm.originalUsername === 'admin'"
+                           :class="editUserForm.originalUsername === 'admin' ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-50 text-slate-800'"
+                           class="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <p v-if="editUserForm.originalUsername === 'admin'" class="text-[11px] text-slate-400 mt-1">The primary 'admin' user cannot be renamed.</p>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Role</label>
+                    <select v-model="editUserForm.role" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white">
+                        <option value="user">User (Read-only)</option>
+                        <option value="operator">Operator (Actions permitted)</option>
+                        <option value="administrator">Administrator (Full control)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-600">New Password (optional)</label>
+                        <button type="button" @click="generateRandomPasswordForEdit" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium inline-flex items-center space-x-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            <span>Generate</span>
+                        </button>
+                    </div>
+                    <div class="relative flex items-center">
+                        <input :type="showEditPassword ? 'text' : 'password'" 
+                               v-model="editUserForm.password" 
+                               @input="editUserForm.isGenerated = false"
+                               minlength="6" placeholder="Leave blank to keep current" 
+                               class="w-full pl-3.5 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono">
+                        <button type="button" @click="showEditPassword = !showEditPassword" class="absolute right-2.5 text-slate-400 hover:text-slate-600">
+                            <svg v-if="showEditPassword" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path></svg>
+                            <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Campo confirmación de edición SIN atributo required -->
+                <div v-if="editUserForm.password && !editUserForm.isGenerated">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Confirm New Password</label>
+                    <input :type="showEditPassword ? 'text' : 'password'" 
+                           v-model="editUserForm.confirmPassword" 
+                           minlength="6" 
+                           placeholder="Repeat new password"
+                           class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono">
+                    <p v-if="editUserForm.confirmPassword && editUserForm.password !== editUserForm.confirmPassword" class="text-rose-600 text-xs mt-1">
+                        Passwords do not match.
+                    </p>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-4">
+                    <button type="button" @click="showEditUserModal = false" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800">Cancel</button>
+                    <!-- Botón con validación condicional exacta -->
+                    <button type="submit" 
+                            :disabled="isSubmittingUser || (Boolean(editUserForm.password) && !editUserForm.isGenerated && editUserForm.password !== editUserForm.confirmPassword)" 
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-sm transition disabled:opacity-50">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TERMINAL LOG MODAL -->
+    <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl">
+            <div class="bg-slate-950 px-5 py-3.5 border-b border-slate-800 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+                    <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+                    <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+                    <span class="text-xs font-mono text-slate-400 ml-2">agent_output.log</span>
+                </div>
+                <button @click="closeLogModal" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
+            </div>
+            <div class="p-4 bg-black/90 h-96 overflow-y-auto custom-scrollbar">
+                <pre class="font-mono text-xs text-emerald-400 whitespace-pre-wrap">{{ currentLogContent }}</pre>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const { createApp } = Vue
+    createApp({
+        data() {
+            return {
+                appVersion: '1.0.0',
+                isLoading: false,
+                isSidebarCollapsed: false,
+                systemSettings: [],
+                showApiToken: false,
+                settingsForm: {},
+                settingsFeedback: null,
+                
+                // Auth & Session
+                loginForm: { username: '', password: '' },
+                authToken: localStorage.getItem('orbit_session') || '',
+                isAuthenticated: !!localStorage.getItem('orbit_session'),
+                username: localStorage.getItem('orbit_username') || '',
+                userRole: localStorage.getItem('orbit_role') || 'user',
+                loginError: '',
+                
+                // Users Management
+                userList: [],
+                showCreateUserModal: false,
+                showEditUserModal: false,
+                showEditPassword: false,
+                isSubmittingUser: false,
+                showNewPassword: false,
+                newUserForm: { username: '', password: '', confirmPassword: '', role: 'user', isGenerated: false },
+                editUserForm: { id: '', originalUsername: '', username: '', role: 'user', password: '', confirmPassword: '', isGenerated: false },
+
+                currentView: 'dashboard',
+                filterMode: 'all',
+                filterPattern: null,
+                chartInstances: {
+                    osChart: null,
+                    updatesChart: null,
+                    agentChart: null,
+                    securityTypeChart: null
+                },
+                nodes: [],
+                GlobalPackage: [],
+                securityEvents: [],
+                allScheduledTasks: [],
+                selectedTaskKeys: [],
+                selectedNodeUuids: [],
+                selectedNode: null,
+                selectedPackages: [],
+                isScheduled: false,
+                scheduleDate: '',
+                isBulkScheduled: false,
+                bulkScheduleDate: '',
+                pendingTasks: [],
+                taskResults: [], 
+                isModalOpen: false,
+                currentLogContent: '',
+                globalTaskResults: [],
+                searchHostname: '',
+                offlineThresholdDays: 30,
+                apiBase: window.location.pathname.replace(/\/$/, '')
+            }
+        },
+        computed: {
+            systemHealth() {
+                if (this.failedNodes.length > 0) {
+                    return {
+                        label: `${this.failedNodes.length} Task Failure(s)`,
+                        colorClass: 'bg-rose-50 text-rose-700 border-rose-200',
+                        dotClass: 'bg-rose-500'
+                    };
+                }
+                if (this.offlineNodes.length > 0) {
+                    return {
+                        label: `${this.offlineNodes.length} Host(s) Unreachable`,
+                        colorClass: 'bg-amber-50 text-amber-700 border-amber-200',
+                        dotClass: 'bg-amber-500'
+                    };
+                }
+                if (this.nodes.length === 0) {
+                    return {
+                        label: 'No Endpoints Enrolled',
+                        colorClass: 'bg-slate-100 text-slate-700 border-slate-200',
+                        dotClass: 'bg-slate-400'
+                    };
+                }
+                return {
+                    label: 'Fleet Healthy & Operational',
+                    colorClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                    dotClass: 'bg-emerald-500'
+                };
+            },
+            totalSecurityUpdates() {
+                const uniquePatches = new Set();
+                
+                this.nodes.forEach(n => {
+                    if (!n.available_updates) return;
+                    n.available_updates.forEach(u => {
+                        // const isSec = u.is_security === true || u.is_security === 'true' || u.is_security === 1;
+                        // if (isSec) {
+                            // Clave única identificativa del paquete
+                            const patchKey = `${u.name}-${u.version}-${u.release}.${u.arch}`;
+                            uniquePatches.add(patchKey);
+                        // }
+                    });
+                });
+                
+                return uniquePatches.size;
+            },
+            <!-- totalSecurityUpdates() { -->
+                <!-- return this.nodes.reduce((sum, n) => { -->
+                    <!-- if (!n.available_updates) return sum; -->
+                    <!-- return sum + n.available_updates.filter(u => u.is_security === true || u.is_security === 'true' || u.is_security === 1).length; -->
+                <!-- }, 0); -->
+            <!-- }, -->
+            scheduledNodes() { if (!this.nodes) return []; return this.nodes.filter(n => n.has_scheduled_tasks); },
+            failedNodes() { if (!this.nodes) return []; return this.nodes.filter(n => n.last_action_status === 'failed'); },
+            packageNodes() {
+                return this.nodes.filter(n => {
+                        if (!n.available_updates) return false;
+                        return n.available_updates.some(u => 
+                            `${u.name}-${u.version}-${u.release}.${u.arch}` === this.filterPattern
+                        );
+                    });
+            },
+            severityNodes() {
+                return this.nodes.filter(n => {
+                        if (!n.available_updates) return false;
+                        return n.available_updates.some(u => u.security_level === this.filterPattern
+                        );
+                    });
+            },
+            tagNodes() {
+                if (!this.nodes) return [];
+
+                const target = (this.filterPattern || '').trim().toLowerCase();
+
+                // Caso 1: Servidores sin tags (n.tags no existe, es null o es un array vacío)
+                if (target === 'untagged') {
+                    return this.nodes.filter(n => !n.tags || n.tags.length === 0);
+                }
+
+                // Caso 2: Filtrar por tag específico (case-insensitive)
+                return this.nodes.filter(n => {
+                    if (!n.tags || !Array.isArray(n.tags)) return false;
+                    return n.tags.some(tag => (tag || '').trim().toLowerCase() === target);
+                });
+            },
+            rebootNodes() { if (!this.nodes) return []; return this.nodes.filter(n => n.needs_reboot === true); },
+            offlineNodes() {
+                if (!this.nodes) return [];
+                const threshold = Date.now() - (this.offlineThresholdDays * 24 * 60 * 60 * 1000);
+                return this.nodes.filter(n => new Date(n.timestamp).getTime() < threshold);
+            },
+            upToDateNodes() { if (!this.nodes) return []; return this.nodes.filter(n => !n.available_updates || n.available_updates.length === 0); },
+            notUpToDateNodes() { if (!this.nodes) return []; return this.nodes.filter(n => n.available_updates && n.available_updates.length > 0); },
+            osNodes() { if (!this.nodes) return []; return this.nodes.filter(n => n.os_version === this.filterPattern); },
+            agentNodes() { if (!this.nodes) return []; return this.nodes.filter(n => n.agent_version === this.filterPattern); },
+            filteredNodes() {
+                let result = this.nodes;
+                
+                if (this.filterMode === 'security') result = result.filter(n => this.hasSecurityUpdates(n.available_updates));
+                else if (this.filterMode === 'scheduled') result = this.scheduledNodes;
+                else if (this.filterMode === 'failed') result = this.failedNodes;
+                else if (this.filterMode === 'offline') result = this.offlineNodes;
+                else if (this.filterMode === 'uptodate') result = this.upToDateNodes;
+                else if (this.filterMode === 'notuptodate') result = this.notUpToDateNodes;
+                else if (this.filterMode === 'package') result = this.packageNodes;
+                else if (this.filterMode === 'reboot') result = this.rebootNodes;
+                else if (this.filterMode === 'severity') result = this.severityNodes;
+                else if (this.filterMode === 'tag') result = this.tagNodes;
+                else if (this.filterMode === 'os') result = this.osNodes;
+                else if (this.filterMode === 'agent') result = this.agentNodes;
+
+                if (this.searchHostname.trim() !== '') {
+                    const term = this.searchHostname.toLowerCase();
+                    result = result.filter(n => (n.fqdn || '').toLowerCase().includes(term));
+                }
+                
+                return result;
+            },
+            sortedFilteredNodes() {
+                return [...this.filteredNodes].sort((a, b) => (a.fqdn || '').localeCompare(b.fqdn || ''));
+            },
+            sortedGlobalPackage() {
+                return [...this.GlobalPackage].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            },
+            sortedAvailableUpdates() {
+                if (!this.selectedNode || !this.selectedNode.available_updates) return [];
+                return [...this.selectedNode.available_updates].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            },
+            sortedAllScheduledTasks() {
+                return [...this.allScheduledTasks].sort((a, b) => (a.fqdn || '').localeCompare(b.fqdn || ''));
+            },
+            isAllNodesSelected() {
+                return this.sortedFilteredNodes.length > 0 && this.selectedNodeUuids.length === this.sortedFilteredNodes.length;
+            },
+            isAllTasksSelected() {
+                return this.sortedAllScheduledTasks.length > 0 && this.selectedTaskKeys.length === this.sortedAllScheduledTasks.length;
+            },
+            getFilterName() {
+                const map = { agent: 'Agent version: ' + this.filterPattern, os: 'Operating System: ' + this.filterPattern, tag: 'Tag: ' + this.filterPattern, severity: 'Severity: ' + this.filterPattern, package: 'Package: ' + this.filterPattern, security: 'Security Packages', scheduled: 'Queued Jobs', failed: 'Failures', offline: `Offline >${this.offlineThresholdDays}d`, uptodate: 'Compliant', notuptodate: 'Not Compliant', reboot: 'Pending Reboots' };
+                return map[this.filterMode] || 'All';
+            },
+            availableToSchedule() {
+                if (!this.selectedNode || !this.selectedNode.available_updates) return [];
+                return this.selectedNode.available_updates.filter(p => !this.isPackageScheduled(p.name));
+            },
+            isAllSelected() {
+                return this.availableToSchedule.length > 0 && this.selectedPackages.length === this.availableToSchedule.length;
+            }
+        },
+        watch: {
+            currentView(val) {
+                if (this.isAuthenticated) {
+                    this.refreshCurrentView();
+                }
+                if (val === 'dashboard') {
+                    this.$nextTick(() => this.renderCharts());
+                } else {
+                    this.destroyCharts();
+                }
+                if (val === 'settings' && this.userRole === 'administrator') {
+                    this.fetchSystemSettings();
+                }
+                if (val === 'users' && this.userRole === 'administrator') {
+                    this.fetchUsers();
+                }
+            },
+            nodes: {
+                deep: true,
+                handler() { 
+                    if (this.currentView === 'dashboard') {
+                        this.$nextTick(() => this.renderCharts()); 
+                    }
+                }
+            }
+        },
+        mounted() {
+            if (this.isAuthenticated) {
+                this.refreshCurrentView();
+            }
+        },
+        methods: {
+            exportServersJSON() {
+                if (!this.sortedFilteredNodes || this.sortedFilteredNodes.length === 0) return;
+
+                // 1. Convertir el array de nodos a un string JSON formateado (2 espacios de indentación)
+                // NOTA: Si usas una variable computada para filtrar (ej. this.filteredNodes), cámbialo aquí.
+                const dataStr = JSON.stringify(this.sortedFilteredNodes, null, 2);
+                
+                // 2. Crear un objeto Blob nativo y su URL temporal
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                // 3. Forzar la descarga dinámicamente
+                this.triggerDownload(url, `orbit_servers_${this.getFormattedDate()}.json`);
+            },
+
+            exportServersCSV() {
+                if (!this.sortedFilteredNodes || this.sortedFilteredNodes.length === 0) return;
+
+                // 1. Definir cabeceras del CSV
+                const headers = [
+                    "UUID", "FQDN", "IP Address", "OS Version", "Kernel",
+                    "Uptime (s)", "CPU Cores", "RAM (MB)", "Pending Updates",
+                    "Security Updates", "Max CVSS", "Needs Reboot", "Last Action Status"
+                ];
+
+                // 2. Mapear los datos de cada servidor aponiendo comillas y escapando valores
+                const rows = this.sortedFilteredNodes.map(n => {
+                    const pendingUpdatesCount = n.available_updates ? n.available_updates.length : 0;
+                    const secUpdatesCount = n.available_updates 
+                        ? n.available_updates.filter(u => u.is_security === true || String(u.is_security) === 'true').length 
+                        : 0;
+                    
+                    const rawRow = [
+                        n.uuid || '',
+                        n.fqdn || '',
+                        n.ip_address || '',
+                        n.os_version || '',
+                        n.kernel_version || '',
+                        n.uptime_seconds || 0,
+                        n.cpu_cores || 0,
+                        n.ram_total_mb || 0,
+                        pendingUpdatesCount,
+                        secUpdatesCount,
+                        n.max_cvss || 0.0,
+                        n.needs_reboot ? 'Yes' : 'No',
+                        n.last_action_status || 'none'
+                    ];
+
+                    // Escapar comillas dobles internas duplicándolas ("") y envolver celda en comillas dobles
+                    return rawRow.map(val => `"${String(val).replace(/"/g, '""')}"`).join(",");
+                });
+
+                // 3. Unir cabeceras y filas con saltos de línea (CRLF es estándar para CSV)
+                const csvContent = [headers.join(","), ...rows].join("\r\n");
+
+                // 4. Descargar incluyendo el BOM (Byte Order Mark) para que Excel reconozca UTF-8 al instante
+                const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                
+                this.triggerDownload(url, `orbit_servers_${this.getFormattedDate()}.csv`);
+            },
+
+            // --- Helpers auxiliares de descarga ---
+            triggerDownload(url, filename) {
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                link.style.display = "none";
+                document.body.appendChild(link);
+                link.click();
+                
+                // Limpieza de memoria (Garbage Collection del navegador)
+                document.body.removeChild(link);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            },
+
+            getFormattedDate() {
+                const now = new Date();
+                return now.toISOString().split('T')[0]; // Devuelve 'YYYY-MM-DD'
+            },
+
+            openCreateUserModal() {
+                this.newUserForm = { username: '', password: '', confirmPassword: '', role: 'user', isGenerated: false };
+                this.showNewPassword = false;
+                this.isSubmittingUser = false;
+                this.showCreateUserModal = true;
+            },
+            securityLevelBadgeClass(level) {
+                if (level === "NONE") return 'bg-slate-100 text-slate-700 border-slate-200';
+                if (level === "LOW") return 'bg-amber-50 text-amber-700 border-amber-200';
+                if (level === "MODERATE") return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+                if (level === "IMPORTANT") return 'bg-orange-50 text-orange-700 border-orange-200';
+                if (level === "CRITICAL") return 'bg-red-50 text-red-700 border-red-200';
+                return 'bg-slate-100 text-slate-700 border-slate-200';
+            },
+            async apiFetch(endpoint, options = {}) {
+                options.headers = {
+                    ...options.headers,
+                    'Authorization': `Bearer ${this.authToken}`
+                };
+                if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
+                    options.headers['Content-Type'] = 'application/json';
+                    options.body = JSON.stringify(options.body);
+                }
+                const res = await fetch(`${this.apiBase}${endpoint}`, options);
+                if (res.status === 401) {
+                    this.logout();
+                    this.loginError = 'Session expired or unauthorized.';
+                    throw new Error('Unauthorized');
+                }
+                return res;
+            },
+            async login() {
+                this.loginError = '';
+                this.isLoading = true;
+                try {
+                    const res = await fetch(`${this.apiBase}/api/v1/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(this.loginForm)
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.authToken = data.token;
+                        this.username = data.username;
+                        this.userRole = data.role;
+                        this.isAuthenticated = true;
+                        localStorage.setItem('orbit_session', data.token);
+                        localStorage.setItem('orbit_username', data.username);
+                        localStorage.setItem('orbit_role', data.role);
+                        this.loginForm = { username: '', password: '' };
+                        this.refreshCurrentView();
+                    } else {
+                        const err = await res.json();
+                        this.loginError = err.detail || 'Invalid username or password.';
+                    }
+                } catch (e) { 
+                    this.loginError = 'Connection error with Orbit server.'; 
+                } finally {
+                    this.isLoading = false;
+                }
+            },
+            logout() {
+                localStorage.removeItem('orbit_session');
+                localStorage.removeItem('orbit_username');
+                localStorage.removeItem('orbit_role');
+                this.isAuthenticated = false;
+                this.authToken = '';
+                this.username = '';
+                this.userRole = 'user';
+                this.nodes = [];
+                this.securityEvents = [];
+                this.allScheduledTasks = [];
+                this.destroyCharts();
+                this.resetSelection();
+            },
+            async fetchUsers() {
+                try {
+                    const res = await this.apiFetch('/api/v1/admin/users');
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.userList = data.users;
+                    }
+                } catch (e) { console.error(e); }
+            },
+            openEditUserModal(u) {
+                this.editUserForm = {
+                    id: u.id,
+                    originalUsername: u.username,
+                    username: u.username,
+                    role: u.role,
+                    password: '',
+                    confirmPassword: '',
+                    isGenerated: false
+                };
+                this.showEditPassword = false;
+                this.showEditUserModal = true;
+            },
+            generateRandomPasswordForNew() {
+                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%&*';
+                let pwd = '';
+                const array = new Uint8Array(16);
+                window.crypto.getRandomValues(array);
+                for (let i = 0; i < 16; i++) {
+                    pwd += chars[array[i] % chars.length];
+                }
+                this.newUserForm.password = pwd;
+                this.newUserForm.confirmPassword = pwd;
+                this.newUserForm.isGenerated = true;
+                this.showNewPassword = true;
+            },
+            generateRandomPasswordForEdit() {
+                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%&*';
+                let pwd = '';
+                const array = new Uint8Array(16);
+                window.crypto.getRandomValues(array);
+                for (let i = 0; i < 16; i++) {
+                    pwd += chars[array[i] % chars.length];
+                }
+                this.editUserForm.password = pwd;
+                this.editUserForm.confirmPassword = pwd;
+                this.editUserForm.isGenerated = true;
+                this.showEditPassword = true;
+            },
+            async submitCreateUser() {
+                if (!this.newUserForm.isGenerated && this.newUserForm.password !== this.newUserForm.confirmPassword) {
+                    alert("Passwords do not match.");
+                    return;
+                }
+                this.isSubmittingUser = true;
+                try {
+                    const res = await this.apiFetch('/api/v1/admin/users', {
+                        method: 'POST',
+                        body: {
+                            username: this.newUserForm.username,
+                            password: this.newUserForm.password,
+                            role: this.newUserForm.role
+                        }
+                    });
+                    if (res.ok) {
+                        // Cerramos el modal y limpiamos el formulario sin volver a abrirlo
+                        this.showCreateUserModal = false;
+                        this.newUserForm = { username: '', password: '', confirmPassword: '', role: 'user', isGenerated: false };
+                        this.showNewPassword = false;
+                        await this.fetchUsers();
+                    } else {
+                        const err = await res.json();
+                        alert(err.detail || 'Error creating user');
+                    }
+                } catch (e) {
+                    console.error(e);
+                } finally {
+                    this.isSubmittingUser = false;
+                }
+            },
+
+            async submitEditUser() {
+                // Si se escribió password y no es autogenerada, verificar que coincidan
+                if (this.editUserForm.password && !this.editUserForm.isGenerated && this.editUserForm.password !== this.editUserForm.confirmPassword) {
+                    alert("Passwords do not match.");
+                    return;
+                }
+                this.isSubmittingUser = true;
+                const payload = {
+                    username: this.editUserForm.username.trim(),
+                    role: this.editUserForm.role
+                };
+                if (this.editUserForm.password && this.editUserForm.password.trim().length > 0) {
+                    payload.password = this.editUserForm.password.trim();
+                }
+
+                try {
+                    const res = await this.apiFetch(`/api/v1/admin/users/${this.editUserForm.id}`, {
+                        method: 'PUT',
+                        body: payload
+                    });
+                    if (res.ok) {
+                        this.showEditUserModal = false;
+                        this.editUserForm = { id: '', originalUsername: '', username: '', role: 'user', password: '', confirmPassword: '', isGenerated: false };
+                        this.showEditPassword = false;
+                        await this.fetchUsers();
+                    } else {
+                        let errorMsg = 'Error updating user.';
+                        try {
+                            const err = await res.json();
+                            errorMsg = err.detail || errorMsg;
+                        } catch (_) {
+                            errorMsg = `Server error (HTTP ${res.status})`;
+                        }
+                        alert(errorMsg);
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert(e.message || "Connection error updating user.");
+                } finally {
+                    this.isSubmittingUser = false;
+                }
+            },
+            async deleteUser(u) {
+                if (!confirm(`Are you sure you want to delete user "${u.username}"?`)) return;
+                try {
+                    const res = await this.apiFetch(`/api/v1/admin/users/${u.id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        await this.fetchUsers();
+                    } else {
+                        const err = await res.json();
+                        alert(err.detail || 'Error deleting user');
+                    }
+                } catch (e) { console.error(e); }
+            },
+            async fetchSystemSettings() {
+                try {
+                    const res = await this.apiFetch('/api/v1/admin/settings');
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.systemSettings = data.settings;
+                        const form = {};
+                        data.settings.forEach(item => {
+                            form[item.key] = item.value;
+                        });
+                        this.settingsForm = form;
+                    }
+                } catch (e) {
+                    console.error("Error fetching settings:", e);
+                }
+            },
+            destroyCharts() {
+                ['osChart', 'updatesChart', 'agentChart', 'securityTypeChart', 'tagsChart'].forEach(key => {
+                    if (this.chartInstances[key]) {
+                        this.chartInstances[key].destroy();
+                        this.chartInstances[key] = null;
+                    }
+                });
+            },
+            resetSelection() {
+                // Selección y programación de tareas en nodos
+                this.selectedTaskKeys = [];
+                this.selectedNodeUuids = [];
+                this.selectedPackages = [];
+                this.isScheduled = false;
+                this.scheduleDate = '';
+                this.isBulkScheduled = false;
+                this.bulkScheduleDate = '';
+                this.searchHostname = '';
+
+                // Estado y formularios de Configuración
+                this.showApiToken = false;
+                this.settingsFeedback = null;
+
+                // Modales y formularios de Usuarios
+                this.showCreateUserModal = false;
+                this.showNewPassword = false;
+                this.showEditUserModal = false;
+                this.showEditPassword = false;
+                this.isSubmittingUser = false;
+                this.newUserForm = { username: '', password: '', confirmPassword: '', role: 'user', isGenerated: false };
+                this.editUserForm = { id: '', originalUsername: '', username: '', role: 'user', password: '', confirmPassword: '', isGenerated: false };
+            },
+            async fetchConfig() {
+                try {
+                    const res = await this.apiFetch('/api/v1/admin/config');
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.offlineThresholdDays = data.offline_threshold_days;
+                        this.appVersion = data.app_version;
+                    }
+                } catch (e) { console.error(e); }
+            },
+            async bulkQuickScheduleAll() {
+                if (!confirm(`Are you sure you want to schedule ALL updates for the ${this.selectedNodeUuids.length} selected server(s)?`)) return;
+
+                const nodesToUpdate = this.nodes.filter(n => this.selectedNodeUuids.includes(n.uuid) && n.available_updates && n.available_updates.length > 0);
+                const sched = this.isBulkScheduled && this.bulkScheduleDate ? new Date(this.bulkScheduleDate).toISOString() : null;
+                
+                try {
+                    const promises = nodesToUpdate.map(node => {
+                        return this.apiFetch(`/api/v1/admin/nodes/${node.uuid}/schedule_task`, {
+                            method: 'POST',
+                            body: { action: 'update', packages: node.available_updates.map(p => p.name), scheduled_at: sched }
+                        });
+                    });
+                    
+                    await Promise.all(promises);
+                    this.resetSelection();
+                    await this.fetchNodes();
+                    await this.fetchAllScheduledTasks();
+                } catch (e) { console.error(e); }
+            },
+            async bulkQuickCancelAll() {
+                if (!confirm(`Are you sure you want to clear the queue for the ${this.selectedNodeUuids.length} selected server(s)?`)) return;
+
+                const nodesToCancel = this.nodes.filter(n => this.selectedNodeUuids.includes(n.uuid) && n.has_scheduled_tasks);
+                try {
+                    const promises = nodesToCancel.map(node => {
+                        return this.apiFetch(`/api/v1/admin/nodes/${node.uuid}/tasks`, { method: 'DELETE' });
+                    });
+                    
+                    await Promise.all(promises);
+                    this.resetSelection();
+                    await this.fetchNodes();
+                    await this.fetchAllScheduledTasks();
+                } catch (e) { console.error(e); }
+            },
+            async refreshCurrentView() {
+                if (!this.isAuthenticated) return;
+                this.isLoading = true;
+                try {
+                    this.resetSelection();
+                    const promises = [this.fetchNodes(), this.fetchConfig()];
+                    if (this.currentView === 'dashboard') {
+                        promises.push(this.fetchGlobalResults(), this.fetchAllScheduledTasks(),this.fetchSecurityEvents());
+                    } else if (this.currentView === 'packages') {
+                        promises.push(this.fetchGlobalPackage(), this.fetchAllScheduledTasks());
+                    } else if (this.currentView === 'scheduled') {
+                        promises.push(this.fetchAllScheduledTasks());
+                    } else if (this.currentView === 'security') {
+                        promises.push(this.fetchSecurityEvents());
+                    } else if (this.currentView === 'details' && this.selectedNode) {
+                        promises.push(this.fetchNodeTasks(), this.fetchNodeResults());
+                    } else if (this.currentView === 'users' && this.userRole === 'administrator') {
+                        promises.push(this.fetchUsers());
+                    } else if (this.currentView === 'settings' && this.userRole === 'administrator') {
+                        promises.push(this.fetchSystemSettings());
+                    }
+                    await Promise.all(promises);
+                } catch (e) {
+                    console.error("Sync error:", e);
+                } finally {
+                    this.isLoading = false;
+                }
+            },
+            async fetchGlobalResults() {
+                try {
+                    const res = await this.apiFetch('/api/v1/admin/results/global');
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.globalTaskResults = data.results;
+                    }
+                } catch (e) { console.error(e); }
+            },
+            async fetchNodes() {
+                try {
+                    const res = await this.apiFetch('/api/v1/admin/nodes');
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.nodes = data.nodes;
+                    }
+                } catch (e) { console.error(e); }
+            },
+            async decommissionServer(node) {
+                if (!confirm(`Are you sure you want to decommission server "${node.fqdn}" (${node.uuid})? All tasks and historical logs will be erased permanently.`)) return;
+
+                try {
+                    const res = await this.apiFetch(`/api/v1/admin/nodes/${node.uuid}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        this.selectedNode = null;
+                        this.currentView = 'servers';
+                        await this.fetchNodes();
+                        await this.fetchAllScheduledTasks();
+                    } else {
+                        alert('Failed to decommission server.');
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            },
+            async bulkDecommissionAll() {
+                if (!confirm(`Are you sure you want to decommission  ${this.selectedNodeUuids.length} selected servers?`)) return;
+
+                const nodesSelected = this.nodes.filter(n => this.selectedNodeUuids.includes(n.uuid));
+                try {
+                    console.log("Selected UUIDs for decommission:", nodesSelected);
+                    const promises = nodesSelected.map(node => {
+                        return this.apiFetch(`/api/v1/admin/nodes/${node.uuid}`, { method: 'DELETE' });
+                    });
+                    
+                    await Promise.all(promises);
+                    this.resetSelection();
+                    await this.fetchNodes();
+                    await this.fetchAllScheduledTasks();
+                } catch (e) {
+                    console.error(e);
+                }
+            },
+            async fetchAllScheduledTasks() {
+                try {
+                    const res = await this.apiFetch('/api/v1/admin/tasks/scheduled');
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.allScheduledTasks = data.scheduled_tasks;
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            },
+            async cancelSingleScheduledTask(task) {
+                if (!confirm(`Are you sure you want to cancel the task for ${task.fqdn}?`)) return;
+
+                try {
+                    const res = await this.apiFetch(`/api/v1/admin/nodes/${task.node_uuid}/tasks/${task.task_id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        await this.fetchAllScheduledTasks();
+                        await this.fetchNodes();
+                    }
+                } catch (e) { console.error(e); }
+            },
+            toggleAllScheduledTasks(e) {
+                this.selectedTaskKeys = e.target.checked 
+                    ? this.sortedAllScheduledTasks.map(t => t.node_uuid + '|' + t.task_id) 
+                    : [];
+            },
+            async bulkCancelScheduledTasks() {
+                if (this.selectedTaskKeys.length === 0) return;
+                if (!confirm(`Are you sure you want to cancel ${this.selectedTaskKeys.length} selected tasks?`)) return;
+
+                const items = this.selectedTaskKeys.map(key => {
+                    const parts = key.split('|');
+                    return { node_id: parts[0], task_id: parts[1] };
+                });
+
+                try {
+                    const res = await this.apiFetch('/api/v1/admin/tasks/bulk_cancel', {
+                        method: 'POST',
+                        body: { items: items }
+                    });
+                    if (res.ok) {
+                        this.selectedTaskKeys = [];
+                        await this.fetchAllScheduledTasks();
+                        await this.fetchNodes();
+                    }
+                } catch (e) { console.error(e); }
+            },
+            async fetchSecurityEvents() {
+                try {
+                    const res = await this.apiFetch('/api/v1/admin/security/events');
+                    if (res.ok) {
+                        const data = await res.json();
+                        // this.securityEvents = data.events;
+                        this.securityEvents = data.events.sort((a, b) => {
+                            return new Date(b.timestamp) - new Date(a.timestamp)
+                        });
+                    }
+                } catch (e) { console.error(e); }
+            },
+            filterBy(mode, pattern = null) {
+                this.filterMode = mode;
+                this.filterPattern = pattern;
+                this.currentView = 'servers';
+            },
+            toggleAllNodes(e) {
+                this.selectedNodeUuids = e.target.checked ? this.sortedFilteredNodes.map(n => n.uuid) : [];
+            },
+            async bulkRebootAll() {
+                if (!confirm(`Are you sure you want to schedule a system reboot for the ${this.selectedNodeUuids.length} selected servers?`)) return;
+                const sched = this.isBulkScheduled && this.bulkScheduleDate ? new Date(this.bulkScheduleDate).toISOString() : null;
+
+                try {
+                    const res = await this.apiFetch('/api/v1/admin/bulk/schedule_task', {
+                        method: 'POST',
+                        body: { node_ids: this.selectedNodeUuids, action: 'reboot', packages: [], scheduled_at: sched }
+                    });
+                    if (res.ok) {
+                        this.resetSelection();
+                        await this.fetchNodes();
+                        await this.fetchAllScheduledTasks();
+                    }
+                } catch (e) { console.error(e); }
+            },
+            async fetchGlobalPackage() {
+                try {
+                    const res = await this.apiFetch('/api/v1/admin/packages/pending');
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.GlobalPackage = data.pending_packages;
+                    }
+                } catch (e) { console.error(e); }
+            },
+            getPackageKey(pkg) {
+                return `${pkg.name}-${pkg.version}-${pkg.release}.${pkg.arch}`;
+            },
+            getUnqueuedNodes(pkg) {
+                if (!pkg.affected_nodes) return [];
+                if (!this.allScheduledTasks || this.allScheduledTasks.length === 0) {
+                    return pkg.affected_nodes;
+                }
+                return pkg.affected_nodes.filter(node => {
+                    const hasTask = this.allScheduledTasks.some(task => 
+                        task.node_uuid === node.uuid && 
+                        task.packages && 
+                        task.packages.includes(pkg.name)
+                    );
+                    return !hasTask;
+                });
+            },
+            async deployPackageGlobally(pkg) {
+                const unqueuedNodes = this.getUnqueuedNodes(pkg);
+                if (unqueuedNodes.length === 0) return;
+
+                const count = unqueuedNodes.length;
+                const isPartial = count < pkg.affected_nodes_count;
+                const promptMsg = isPartial
+                    ? `Are you sure you want to update ${pkg.name} (${pkg.version}-${pkg.release}) on the remaining ${count} server(s)?`
+                    : `Are you sure you want to update ${pkg.name} (${pkg.version}-${pkg.release}) on all ${count} affected servers?`;
+
+                if (!confirm(promptMsg)) return;
+
+                try {
+                    const res = await this.apiFetch('/api/v1/admin/bulk/schedule_task', {
+                        method: 'POST',
+                        body: { 
+                            node_ids: unqueuedNodes.map(n => n.uuid), 
+                            action: 'update', 
+                            packages: [pkg.name] 
+                        }
+                    });
+                    if (res.ok) {
+                        await this.fetchAllScheduledTasks();
+                        await this.fetchNodes();
+                        await this.fetchGlobalPackage();
+                    }
+                } catch (e) { console.error(e); }
+            },
+            viewNodeFromFqdn(hostName) {
+                // Buscar el nodo completo en this.nodes coincidiendo con el FQDN o el UUID corto
+                const targetNode = this.nodes.find(n => {
+                    const nodeName = n.fqdn || n.uuid.substring(0, 8);
+                    return nodeName === hostName;
+                });
+
+                if (targetNode) {
+                    // Reutilizamos tu función original pasándole el objeto completo
+                    this.viewNodeDetails(targetNode);
+                } else {
+                    console.warn("No se encontró el nodo con nombre:", hostName);
+                }
+            },
+            viewNodeDetails(node) {
+                this.selectedNode = node;
+                this.currentView = 'details';
+                this.selectedPackages = [];
+                this.fetchNodeTasks();
+                this.fetchNodeResults();
+            },
+            async fetchNodeTasks() {
+                try {
+                    const res = await this.apiFetch(`/api/v1/admin/nodes/${this.selectedNode.uuid}/tasks`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.pendingTasks = data.tasks;
+                    }
+                } catch (e) { console.error(e); }
+            },
+            async fetchNodeResults() {
+                try {
+                    const res = await this.apiFetch(`/api/v1/admin/nodes/${this.selectedNode.uuid}/results`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.taskResults = data.results;
+                    }
+                } catch (e) { console.error(e); }
+            },
+            async scheduleUpdate(pkgs) {
+                const targetCount = pkgs.length;
+                const timeInfo = this.isScheduled && this.scheduleDate ? `for ${this.scheduleDate}` : 'immediately';
+                if (!confirm(`Are you sure you want to schedule updates for ${targetCount} package(s) on ${this.selectedNode.fqdn} ${timeInfo}?`)) return;
+
+                const sched = this.isScheduled && this.scheduleDate ? new Date(this.scheduleDate).toISOString() : null;
+                try {
+                    const res = await this.apiFetch(`/api/v1/admin/nodes/${this.selectedNode.uuid}/schedule_task`, {
+                        method: 'POST',
+                        body: { action: 'update', packages: pkgs, scheduled_at: sched }
+                    });
+                    if (res.ok) {
+                        this.selectedPackages = [];
+                        this.isScheduled = false;
+                        await this.fetchNodeTasks();
+                        await this.fetchNodes();
+                        await this.fetchAllScheduledTasks();
+                    }
+                } catch (e) { console.error(e); }
+            },
+            async scheduleRebootTask() {
+                const timeInfo = this.isScheduled && this.scheduleDate ? `for ${this.scheduleDate}` : 'immediately';
+                if (!confirm(`Are you sure you want to schedule a system reboot on ${this.selectedNode.fqdn} ${timeInfo}?`)) return;
+
+                const sched = this.isScheduled && this.scheduleDate ? new Date(this.scheduleDate).toISOString() : null;
+                try {
+                    const res = await this.apiFetch(`/api/v1/admin/nodes/${this.selectedNode.uuid}/schedule_task`, {
+                        method: 'POST',
+                        body: { action: 'reboot', packages: [], scheduled_at: sched }
+                    });
+                    if (res.ok) {
+                        this.selectedPackages = [];
+                        this.isScheduled = false;
+                        await this.fetchNodeTasks();
+                        await this.fetchNodes();
+                        await this.fetchAllScheduledTasks();
+                    }
+                } catch (e) { console.error(e); }
+            },
+            async cancelTask(id) {
+                if (!confirm(`Are you sure you want to cancel this scheduled task?`)) return;
+
+                try {
+                    const res = await this.apiFetch(`/api/v1/admin/nodes/${this.selectedNode.uuid}/tasks/${id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        await this.fetchNodeTasks();
+                        await this.fetchNodes();
+                        await this.fetchAllScheduledTasks();
+                    }
+                } catch (e) { console.error(e); }
+            },
+            async quickScheduleAll(node) {
+                const count = node.available_updates.length;
+                if (!confirm(`Are you sure you want to update all ${count} available packages on ${node.fqdn}?`)) return;
+
+                try {
+                    const res = await this.apiFetch(`/api/v1/admin/nodes/${node.uuid}/schedule_task`, {
+                        method: 'POST',
+                        body: { action: 'update', packages: node.available_updates.map(p => p.name) }
+                    });
+                    if (res.ok) {
+                        await this.fetchNodes();
+                        await this.fetchAllScheduledTasks();
+                    }
+                } catch (e) { console.error(e); }
+            },
+            async quickCancelAll(node) {
+                if (!confirm(`Are you sure you want to cancel all pending tasks for ${node.fqdn}?`)) return;
+
+                try {
+                    const res = await this.apiFetch(`/api/v1/admin/nodes/${node.uuid}/tasks`, { method: 'DELETE' });
+                    if (res.ok) {
+                        await this.fetchNodes();
+                        await this.fetchAllScheduledTasks();
+                    }
+                } catch (e) { console.error(e); }
+            },
+            isPackageScheduled(name) {
+                return this.pendingTasks.some(t => t.packages && t.packages.includes(name));
+            },
+            toggleAllPackages(e) {
+                this.selectedPackages = e.target.checked ? this.availableToSchedule.map(p => p.name) : [];
+            },
+            openLogModal(res) {
+                this.currentLogContent = res.log || 'No output recorded.';
+                this.isModalOpen = true;
+            },
+            closeLogModal() { this.isModalOpen = false; },
+            hasSecurityUpdates(updates) {
+                if (!updates || !Array.isArray(updates)) return false;
+                return updates.some(u => u.is_security === true || u.is_security === 'true' || u.is_security === 1);
+            },
+            formatTime(iso) { return iso ? new Date(iso).toLocaleString() : 'N/A'; },
+            formatUptime(sec) {
+                if (!sec) return 'N/A';
+                return `${Math.floor(sec / 86400)}d ${Math.floor((sec % 86400) / 3600)}h`;
+            },
+            renderCharts() {
+                if (!this.isAuthenticated || this.currentView !== 'dashboard') return;
+
+                this.$nextTick(() => {
+                    this.destroyCharts();
+                
+                    const canvasOs = document.getElementById('osChart');
+                    const canvasUp = document.getElementById('updatesChart');
+                    const canvasAgent = document.getElementById('agentChart');
+                    const canvasSecType = document.getElementById('securityTypeChart');
+                    const canvasVuln = document.getElementById('updatesChart');
+
+                    if (!canvasOs || !canvasUp || !canvasAgent || !canvasSecType || !canvasVuln) return;
+                    if (canvasOs.offsetParent === null || canvasUp.offsetParent === null || canvasAgent.offsetParent === null || canvasSecType.offsetParent === null || canvasVuln.offsetParent === null) return;
+
+                    // 1. OS Distribution
+                    <!-- if (this.chartInstances.osChart) { -->
+                        <!-- this.chartInstances.osChart.destroy(); -->
+                        <!-- this.chartInstances.osChart = null; -->
+                    <!-- } -->
+
+                    const osCounts = {};
+                    this.nodes.forEach(n => {
+                        const os = n.os_version || 'Unknown';
+                        osCounts[os] = (osCounts[os] || 0) + 1;
+                    });
+
+                    const ctxOs = canvasOs.getContext('2d');
+                    if (ctxOs) {
+                        this.chartInstances.osChart = new Chart(ctxOs, {
+                            type: 'doughnut',
+                            data: {
+                                labels: Object.keys(osCounts),
+                                datasets: [{
+                                    data: Object.values(osCounts),
+                                    backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#06b6d4']
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                animation: false,
+                                plugins: {
+                                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+                                },
+                                onHover: (event, chartElement) => {
+                                   event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                                },
+                                onClick: (event, elements, chart) => {
+                                    if (elements && elements.length > 0) {
+                                        const clickedLabel = chart.data.labels[elements[0].index];
+                                        // Llama a tu función de filtrado
+                                        this.filterBy('os',clickedLabel);
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    // 2. Top Vulnerable Hosts
+                    // --- 1. Calcular Top Vulnerable Hosts por Nivel de Seguridad ---
+                    <!-- if (this.chartInstances.updatesChart) { -->
+                        <!-- this.chartInstances.updatesChart.destroy(); -->
+                        <!-- this.chartInstances.updatesChart = null; -->
+                    <!-- } -->
+
+                    // Mapear los nodos y contar los niveles de seguridad
+                    let vulnNodes = this.nodes.filter(n => 
+                        n.available_updates && n.available_updates.some(u => 
+                            u.is_security === true || u.is_security === 'true' || u.is_security === 1
+                        )
+                    ).map(n => {
+                        let counts = { CRITICAL: 0, IMPORTANT: 0, MODERATE: 0, LOW: 0, NONE: 0 };
+                        let totalSec = 0;
+                        
+                        n.available_updates.forEach(u => {
+                            const isSec = u.is_security === true || u.is_security === 'true' || u.is_security === 1;
+                            if (isSec) {
+                                // Retrocompatibilidad: si no tiene security_level (agente viejo), asumimos NONE
+                                let lvl = (u.security_level || 'NONE').toUpperCase();
+                                if (counts[lvl] !== undefined) {
+                                    counts[lvl]++;
+                                    totalSec++;
+                                } else {
+                                    // Si viene un valor anómalo, lo metemos en none
+                                    counts.NONE++;
+                                    totalSec++;
+                                }
+                            }
+                        });
+                        
+                        return {
+                            name: n.fqdn || n.uuid.substring(0, 8),
+                            counts: counts,
+                            total: totalSec
+                        };
+                    });
+
+                    // Ordenar por el total de vulnerabilidades (de mayor a menor) y quedarnos con el Top 5
+                    vulnNodes.sort((a, b) => b.total - a.total);
+                    let topNodes = vulnNodes.slice(0, 5);
+
+                    // Preparar los arrays de datos para Chart.js
+                    const labels = topNodes.map(n => n.name);
+                    const dataCritical = topNodes.map(n => n.counts.CRITICAL);
+                    const dataImportant = topNodes.map(n => n.counts.IMPORTANT);
+                    const dataModerate = topNodes.map(n => n.counts.MODERATE);
+                    const dataLow = topNodes.map(n => n.counts.LOW);
+                    const dataNone = topNodes.map(n => n.counts.NONE);
+
+                    // --- 2. Renderizar el Gráfico Apilado (Stacked Bar) ---
+                    const ctxVuln = canvasVuln.getContext('2d');
+                    this.chartInstances.updatesChart = new Chart(ctxVuln, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'None',
+                                    data: dataNone,
+                                    backgroundColor: '#6366f1',
+                                    borderRadius: 2
+                                },
+                                {
+                                    label: 'Low',
+                                    data: dataLow,
+                                    backgroundColor: '#10b981',
+                                    borderRadius: 2
+                                },
+                                {
+                                    label: 'Moderate',
+                                    data: dataModerate,
+                                    backgroundColor: '#f59e0b',
+                                    borderRadius: 2
+                                },
+                                {
+                                    label: 'Important',
+                                    data: dataImportant,
+                                    backgroundColor: '#f43f5e',
+                                    borderRadius: 2
+                                },
+                                {
+                                    label: 'Critical',
+                                    data: dataCritical,
+                                    backgroundColor: '#8b5cf6',
+                                    borderRadius: 2
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { 
+                                    stacked: true,
+                                    grid: { display: false }
+                                },
+                                y: { 
+                                    stacked: true,
+                                    beginAtZero: true,
+                                    border: { dash: [4, 4] },
+                                    grid: { color: '#f1f5f9' },
+                                    ticks: { precision: 0 } // Evitar decimales en conteo de paquetes
+                                }
+                            },
+                            plugins: {
+                                legend: { 
+                                    position: 'bottom', 
+                                    labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } 
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false
+                                }
+                            },
+                            onHover: (event, chartElement) => {
+                                const target = event.native ? event.native.target : event.target;
+                                target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                            },
+                            
+                            onClick: (event, elements, chart) => {
+                                if (elements && elements.length > 0) {
+                                    // Obtener el índice de la columna pulsada
+                                    const dataIndex = elements[0].index;
+                                    
+                                    // Extraer el nombre del host (etiqueta del eje X)
+                                    const hostName = chart.data.labels[dataIndex];
+                                    
+                                    // Llamar al método de Vue pasando el nombre del host
+                                    this.viewNodeFromFqdn(hostName);
+                                }
+                            }
+                        }
+                    });
+
+                    // 3. Agent Versions
+                    <!-- if (this.chartInstances.agentChart) { -->
+                        <!-- this.chartInstances.agentChart.destroy(); -->
+                        <!-- this.chartInstances.agentChart = null; -->
+                    <!-- } -->
+
+                    const agentCounts = {};
+                    this.nodes.forEach(n => {
+                        const v = n.agent_version || '1.0.0 (Legacy)';
+                        agentCounts[v] = (agentCounts[v] || 0) + 1;
+                    });
+
+                    const ctxAgent = canvasAgent.getContext('2d');
+                    if (ctxAgent) {
+                        this.chartInstances.agentChart = new Chart(ctxAgent, {
+                            type: 'doughnut',
+                            data: {
+                                labels: Object.keys(agentCounts),
+                                datasets: [{
+                                    data: Object.values(agentCounts),
+                                    backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#06b6d4'],
+                                    borderWidth: 0
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                animation: false,
+                                plugins: {
+                                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+                                },
+                                onHover: (event, chartElement) => {
+                                   event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                                },
+                                onClick: (event, elements, chart) => {
+                                    if (elements && elements.length > 0) {
+                                        const clickedLabel = chart.data.labels[elements[0].index];
+                                        // Llama a tu función de filtrado
+                                        this.filterBy('agent',clickedLabel);
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    // 4. Security Type Distribution
+                    <!-- if (this.chartInstances.securityTypeChart) { -->
+                        <!-- this.chartInstances.securityTypeChart.destroy(); -->
+                        <!-- this.chartInstances.securityTypeChart = null; -->
+                    <!-- } -->
+
+                    // 1. Inicializar contadores y Map para unicidad
+                    const severityCounts = {
+                        CRITICAL: 0,
+                        IMPORTANT: 0,
+                        MODERATE: 0,
+                        LOW: 0,
+                        NONE: 0
+                    };
+
+                    // Map para guardar paquetes únicos. Key: Firma del paquete, Value: Nivel de seguridad
+                    const uniquePackages = new Map();
+
+                    // 2. Recorrer todos los servidores y extraer solo paquetes únicos
+                    this.nodes.forEach(n => {
+                        if (n.available_updates) {
+                            n.available_updates.forEach(u => {
+                                // Generar clave única identificativa igual que en el backend (Advisory)
+                                const pkgKey = `${u.name}-${u.version}-${u.release}.${u.arch}`;
+                                
+                                if (!uniquePackages.has(pkgKey)) {
+                                    // Extraer el nivel, forzando mayúsculas. Por defecto NONE.
+                                    let lvl = (u.security_level || 'NONE').toUpperCase();
+                                    
+                                    // Retrocompatibilidad: Si el agente es viejo y solo mandó is_security: true
+                                    if (lvl === 'NONE' && (u.is_security === true || u.is_security === 'true')) {
+                                        lvl = 'MODERATE';
+                                    }
+                                    
+                                    uniquePackages.set(pkgKey, lvl);
+                                }
+                            });
+                        }
+                    });
+
+                    // 3. Contabilizar las severidades leyendo el Map ya deduplicado
+                    uniquePackages.forEach(lvl => {
+                        if (severityCounts[lvl] !== undefined) {
+                            severityCounts[lvl]++;
+                        } else {
+                            severityCounts.NONE++;
+                        }
+                    });
+
+                    // --- RENDERIZADO DEL GRÁFICO (Este bloque queda igual) ---
+                    const ctxSecType = canvasSecType.getContext('2d');
+                    if (ctxSecType) {
+                        this.chartInstances.securityTypeChart = new Chart(ctxSecType, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['None', 'Low', 'Moderate', 'Important', 'Critical'],
+                                datasets: [{
+                                    data: [                                      
+                                        severityCounts.NONE,
+                                        severityCounts.LOW,
+                                        severityCounts.MODERATE,
+                                        severityCounts.IMPORTANT,
+                                        severityCounts.CRITICAL
+                                    ],
+                                    backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#06b6d4'],
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                animation: false,
+                                plugins: {
+                                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+                                },
+                                onHover: (event, chartElement) => {
+                                    const target = event.native ? event.native.target : event.target;
+                                    target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                                },
+                                
+                                onClick: (event, elements, chart) => {
+                                    if (elements && elements.length > 0) {
+                                        // Obtener el índice de la columna pulsada
+                                        const dataIndex = elements[0].index;
+                                        
+                                        // Extraer el nombre del host (etiqueta del eje X)
+                                        const severity = chart.data.labels[dataIndex];
+                                        
+                                        // Llamar al método de Vue pasando el nombre del host
+                                        this.filterBy('severity',severity.toUpperCase());
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    // Contabilizar frecuencias de etiquetas
+                    const tagCounts = {};
+                    this.nodes.forEach(n => {
+                        if (n.tags && n.tags.length > 0) {
+                            n.tags.forEach(tag => {
+                                tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+                            });
+                        } else {
+                            tagCounts['untagged'] = (tagCounts['untagged'] || 0) + 1;
+                        }
+                    });
+
+                    // Preparar datos para Chart.js
+                    const tagLabels = Object.keys(tagCounts);
+                    const tagData = Object.values(tagCounts);
+
+                    <!-- // Destruir instancia previa si existe -->
+                    <!-- if (this.chartInstances.tagsChart) { -->
+                        <!-- this.chartInstances.tagsChart.destroy(); -->
+                        <!-- this.chartInstances.tagsChart = null; -->
+                    <!-- } -->
+
+                    const ctxTags = document.getElementById('tagsChart').getContext('2d');
+                    this.chartInstances.tagsChart = new Chart(ctxTags, {
+                        type: 'bar', // Usa 'bar' con indexAxis: 'y' para barras horizontales
+                        data: {
+                            labels: tagLabels,
+                            datasets: [{
+                                data: tagData,
+                                backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#06b6d4'],
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y', // Convierte las barras a horizontales para leer bien los nombres
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            onHover: (event, chartElement) => {
+                                event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                            },
+                            onClick: (event, elements, chart) => {
+                                if (elements && elements.length > 0) {
+                                    const clickedTag = chart.data.labels[elements[0].index];
+                                    // Llama a tu función de filtrado
+                                    this.filterBy('tag',clickedTag);
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+        }
+    }).mount('#app')
+</script>
+</body>
+</html>
