@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Base cuadrada redondeada idéntica a los contenedores de la UI (Tailwind rounded-2xl) -->
+  <rect width="512" height="512" rx="128" fill="#4f46e5" />
+  
+  <!-- Letra 'O' mayúscula centrada -->
+  <text x="50%" y="53%" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="320" font-weight="700">O</text>
+</svg>
