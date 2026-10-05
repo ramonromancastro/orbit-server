@@ -4,7 +4,7 @@
 #
 # Usage:
 #   sudo ./get-orbit.sh [--version <tag>] [--dir <path>]
-#   curl -sSL https://raw.githubusercontent.com/.../get-orbit.sh | sudo bash -s -- --version v1.2.3
+#   curl -sSL https://raw.githubusercontent.com/.../get-orbit.sh | sudo bash -s -- --version 1.2.3
 # ==============================================================================
 
 set -euo pipefail
@@ -47,11 +47,11 @@ Usage:
   sudo ./get-orbit.sh [OPTIONS]
 
 Options:
-  -v, --version <tag>    Specify release tag (e.g., v1.2.3). Default: latest
+  -v, --version <tag>    Specify release tag (e.g., 1.2.3). Default: latest
   -h, --help             Display this help message
 
 Examples:
-  sudo ./get-orbit.sh --version v1.0.0
+  sudo ./get-orbit.sh --version 1.0.0
   sudo ./get-orbit.sh --version latest
 EOF
     exit 0

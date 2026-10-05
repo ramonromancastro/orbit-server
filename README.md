@@ -61,10 +61,10 @@ The official bootstrap script downloads the latest release (or an explicit tag),
 
 ```bash
 # Install the latest stable release:
-curl -sSL https://raw.githubusercontent.com/ramonromancastro/orbit-server/main/get-orbit.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/ramonromancastro/orbit-server/main/get_orbit.sh | sudo bash
 
 # Or install a specific tagged version with nominal arguments:
-curl -sSL https://raw.githubusercontent.com/ramonromancastro/orbit-server/main/get-orbit.sh | sudo bash -s -- --version v1.2.3
+curl -sSL https://raw.githubusercontent.com/ramonromancastro/orbit-server/main/get_orbit.sh | sudo bash -s -- --version v1.2.3
 ```
 
 ### Option B: Manual Git Clone
@@ -73,7 +73,7 @@ To audit the source and provision the system manually:
 
 ```bash
 # 1. Clone repository to the FHS deployment directory
-sudo git clone [https://github.com/ramonromancastro/orbit-server.git](https://github.com/ramonromancastro/orbit-server.git) /opt/orbit-server
+sudo git clone https://github.com/ramonromancastro/orbit-server.git /opt/orbit-server
 
 # 2. Enter project path
 cd /opt/orbit-server

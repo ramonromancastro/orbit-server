@@ -9,11 +9,15 @@ set -euo pipefail
 # CONSTANTS & DIRECTORIES
 ###################################
 APP_DIR="/opt/orbit-server"
-ETC_DIR="/etc/orbit-server"
 VAR_DIR="/var/lib/orbit-server"
 LOG_DIR="/var/log/orbit"
 SERVICE_FILE="/etc/systemd/system/orbit-server.service"
-SYSCONFIG_FILE="/etc/sysconfig/orbit-server"
+# Determine sysconfig / default path according to OS family
+if [ -d "/etc/sysconfig" ]; then
+    SYSCONFIG_FILE="/etc/sysconfig/orbit-server"
+else
+    SYSCONFIG_FILE="/etc/default/orbit-server"
+fi
 LOGROTATE_FILE="/etc/logrotate.d/orbit-server"
 
 # ANSI Terminal Colors
@@ -215,7 +219,7 @@ Restart=always
 RestartSec=5
 
 # Security Hardening Directives
-ProtectSystem=strict
+ProtectSystem=full
 ProtectHome=true
 ReadOnlyPaths=${APP_DIR}
 ReadWritePaths=${VAR_DIR} ${LOG_DIR}
