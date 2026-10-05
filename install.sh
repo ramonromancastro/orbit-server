@@ -171,7 +171,7 @@ log_info "Applying restrictive system permissions (Least Privilege)..."
 # Source code tree
 chown -R root:orbit "${APP_DIR}"
 find "${APP_DIR}" -type d -exec chmod o=,u=rwx,g=rx {} +
-find "${APP_DIR}" -type f -exec chmod o=,u+rw,g+r {} +
+find "${APP_DIR}" -type f -exec chmod o=,u=rwX,g=rX {} +
 chmod 750 "${APP_DIR}/install.sh" 2>/dev/null || true
 chmod -R g+rX "${APP_DIR}/venv"
 
