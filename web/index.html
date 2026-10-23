@@ -13,10 +13,30 @@
     <!-- Chart.js -->
     <!--<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>-->
     <script src="assets/js/chart.js/chart.umd.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preload" href="fonts/Inter-Variable.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+    <link rel="preload" href="fonts/JetBrainsMono-Variable.woff2" as="font" type="font/woff2" crossorigin="anonymous">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+        @font-face {
+            font-family: 'Inter';
+            font-style: normal;
+            font-weight: 100 900;
+            font-display: swap;
+            src: url('web/assets/fonts/Inter-Variable.woff2') format('woff2');
+        }
+
+        @font-face {
+            font-family: 'JetBrains Mono';
+            font-style: normal;
+            font-weight: 100 800;
+            font-display: swap;
+            src: url('web/assets/fonts/JetBrainsMono-Variable.woff2') format('woff2');
+        }
+
+        /* Estilos originales de tu aplicación */
         body { font-family: 'Inter', sans-serif; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
+
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
