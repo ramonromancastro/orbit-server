@@ -8,7 +8,8 @@
     <!--<script src="https://cdn.tailwindcss.com"></script>-->
     <link rel="stylesheet" href="assets/css/tailwind.css">
     <!-- Vue.js 3 -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js" crossorigin="anonymous"></script>
+    <!--<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js" crossorigin="anonymous"></script>-->
+    <script src="assets/js/vue.js/vue.global.prod.js"></script>
     <!-- Chart.js -->
     <!--<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>-->
     <script src="assets/js/chart.js/chart.umd.min.js"></script>
@@ -36,7 +37,7 @@
 <body class="bg-slate-50 text-slate-800 antialiased selection:bg-indigo-500 selection:text-white">
 
 <div id="app" class="min-h-screen flex flex-col">
-    
+
     <!-- LOGIN SCREEN -->
     <div v-if="!isAuthenticated" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-4">
         <div class="bg-white/95 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700/40">
@@ -45,7 +46,7 @@
                 <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Orbit Enterprise</h1>
                 <p class="text-sm text-slate-500 mt-1">Linux Fleet Patch Orchestration</p>
             </div>
-            
+
             <form @submit.prevent="login" class="space-y-4">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Username</label>
@@ -67,11 +68,11 @@
     <div v-else class="flex-grow flex h-screen overflow-hidden">
         <!-- SIDEBAR -->
         <aside :class="isSidebarCollapsed ? 'w-20' : 'w-64'" class="bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-300 z-40 select-none">
-            
+
             <!-- Brand / Header Adaptable -->
             <div class="h-16 flex items-center border-b border-slate-800/80 transition-all duration-300"
                  :class="isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-4'">
-                
+
                 <!-- Estado EXPANDIDO: Logo + Título + Botón Colapsar -->
                 <template v-if="!isSidebarCollapsed">
                     <div class="flex items-center space-x-3 cursor-pointer overflow-hidden" @click="currentView = 'dashboard'">
@@ -82,7 +83,7 @@
                             Orbit <span class="text-indigo-400 font-normal">Enterprise</span>
                         </span>
                     </div>
-                    <button @click="isSidebarCollapsed = true" 
+                    <button @click="isSidebarCollapsed = true"
                             class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition flex-shrink-0"
                             title="Collapse Sidebar">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,7 +94,7 @@
 
                 <!-- Estado COLAPSADO: Icono centrado con acción de expandir -->
                 <template v-else>
-                    <button @click="isSidebarCollapsed = false" 
+                    <button @click="isSidebarCollapsed = false"
                             class="w-10 h-10 bg-indigo-600 hover:bg-indigo-700 rounded-xl flex items-center justify-center text-white font-bold shadow-md shadow-indigo-500/20 transition relative group"
                             title="Expand Sidebar">
                         <span>O</span>
@@ -114,7 +115,7 @@
                 <div>
                     <div v-show="!isSidebarCollapsed" class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Operations</div>
                     <nav class="space-y-1">
-                        <button @click="currentView = 'dashboard'" 
+                        <button @click="currentView = 'dashboard'"
                                 :title="isSidebarCollapsed ? 'Dashboard' : ''"
                                 :class="currentView === 'dashboard' ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/20' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'"
                                 class="w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition">
@@ -122,7 +123,7 @@
                             <span v-show="!isSidebarCollapsed" class="ml-3 font-medium">Dashboard</span>
                         </button>
 
-                        <button @click="filterMode = 'all'; currentView = 'servers'" 
+                        <button @click="filterMode = 'all'; currentView = 'servers'"
                                 :title="isSidebarCollapsed ? 'Servers' : ''"
                                 :class="currentView === 'servers' || currentView === 'details' ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/20' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'"
                                 class="w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition">
@@ -130,7 +131,7 @@
                             <span v-show="!isSidebarCollapsed" class="ml-3 font-medium">Managed Servers</span>
                         </button>
 
-                        <button @click="currentView = 'packages'" 
+                        <button @click="currentView = 'packages'"
                                 :title="isSidebarCollapsed ? 'Packages Advisory' : ''"
                                 :class="currentView === 'packages' ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/20' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'"
                                 class="w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition">
@@ -138,7 +139,7 @@
                             <span v-show="!isSidebarCollapsed" class="ml-3 font-medium">Package Advisory</span>
                         </button>
 
-                        <button @click="currentView = 'scheduled'" 
+                        <button @click="currentView = 'scheduled'"
                                 :title="isSidebarCollapsed ? 'Scheduled Queue' : ''"
                                 :class="currentView === 'scheduled' ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/20' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'"
                                 class="w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition">
@@ -152,7 +153,7 @@
                 <div>
                     <div v-show="!isSidebarCollapsed" class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Surveillance</div>
                     <nav class="space-y-1">
-                        <button @click="currentView = 'security'" 
+                        <button @click="currentView = 'security'"
                                 :title="isSidebarCollapsed ? 'Security Audit' : ''"
                                 :class="currentView === 'security' ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/20' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'"
                                 class="w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition">
@@ -166,7 +167,7 @@
                 <div v-if="userRole === 'administrator'">
                     <div v-show="!isSidebarCollapsed" class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Management</div>
                     <nav class="space-y-1">
-                        <button @click="currentView = 'users'" 
+                        <button @click="currentView = 'users'"
                                 :title="isSidebarCollapsed ? 'Users' : ''"
                                 :class="currentView === 'users' ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/20' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'"
                                 class="w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition">
@@ -174,7 +175,7 @@
                             <span v-show="!isSidebarCollapsed" class="ml-3 font-medium">Users Management</span>
                         </button>
 
-                        <button @click="currentView = 'settings'" 
+                        <button @click="currentView = 'settings'"
                                 :title="isSidebarCollapsed ? 'Configuration' : ''"
                                 :class="currentView === 'settings' ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/20' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'"
                                 class="w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition">
@@ -187,7 +188,7 @@
                 <div>
                     <div v-show="!isSidebarCollapsed" class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">System</div>
                     <nav class="space-y-1">
-                        <button @click="currentView = 'about'" 
+                        <button @click="currentView = 'about'"
                                 :title="isSidebarCollapsed ? 'About Orbit' : ''"
                                 :class="currentView === 'about' ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/20' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'"
                                 class="w-full flex items-center px-3 py-2.5 rounded-xl text-sm transition">
@@ -241,14 +242,14 @@
 
             <!-- SCROLLABLE CONTENT BODY -->
             <main class="flex-grow overflow-y-auto custom-scrollbar p-6 lg:p-8">
-                
+
                 <!-- VIEW 0: GLOBAL DASHBOARD -->
                 <div v-show="currentView === 'dashboard'">
                     <div class="mb-6">
                         <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Fleet Health Overview</h2>
                         <p class="text-sm text-slate-500 mt-1">Real-time status of managed Linux endpoints and pending vulnerabilities.</p>
                     </div>
-                    
+
                     <!-- KPI CARDS GRID -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                         <div @click="filterBy('all')" class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-emerald-200 transition group">
@@ -260,7 +261,7 @@
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path></svg>
                             </div>
                         </div>
-                        
+
                         <div @click="currentView = 'packages'" :class="totalSecurityUpdates > 0 ? 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-rose-200 transition group' : 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-emerald-200 transition group'">
                             <div>
                                 <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Updates Availables</p>
@@ -270,7 +271,7 @@
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                             </div>
                         </div>
-                        
+
                         <div @click="currentView = 'scheduled'" :class="allScheduledTasks.length > 0 ? 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-rose-200 transition group' : 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-emerald-200 transition group'">
                             <div>
                                 <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Queued Jobs</p>
@@ -320,7 +321,7 @@
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             </div>
                         </div>
-                        
+
                         <div @click="filterBy('reboot')" :class="rebootNodes.length > 0 ? 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-amber-200 transition group' : 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-emerald-200 transition group'">
                             <div>
                                 <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Pending Reboots</p>
@@ -359,7 +360,7 @@
                             <div class="relative h-64"><canvas id="tagsChart"></canvas></div>
                         </div>
                     </div>
-                    
+
                     <!-- GLOBAL LOG HISTORY -->
                     <div v-if="globalTaskResults.length > 0" class="mt-6 bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden w-full">
                         <div class="px-5 py-4 border-b border-slate-100">
@@ -401,16 +402,16 @@
                             </span>
                             <p class="text-sm text-slate-500 mt-1">All managed Linux endpoints and their status.</p>
                         </div>
-                        
+
                         <div class="flex items-center space-x-4 w-full md:w-auto">
-                            <button @click="exportServersCSV" 
+                            <button @click="exportServersCSV"
                                     class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-200">
                                 <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                 </svg>
                                 Export CSV
                             </button>
-                            <button @click="exportServersJSON" 
+                            <button @click="exportServersJSON"
                                     class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-200">
                                 <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
@@ -424,12 +425,12 @@
 
                             <div v-if="selectedNodeUuids.length > 0 && userRole !== 'user'" class="flex items-center flex-wrap gap-2 bg-indigo-50 p-2 rounded-xl border border-indigo-100">
                                 <span class="text-xs font-semibold text-indigo-800 ml-2 mr-2">{{ selectedNodeUuids.length }} selected</span>
-                                
+
                                 <label class="inline-flex items-center text-xs text-slate-600 cursor-pointer">
                                     <input type="checkbox" v-model="isBulkScheduled" class="rounded border-slate-300 text-indigo-600 mr-1.5">
                                     Schedule At
                                 </label>
-                                <input v-if="isBulkScheduled" type="datetime-local" v-model="bulkScheduleDate" class="text-xs border border-slate-200 rounded-lg p-1.5 bg-white text-slate-700">                            
+                                <input v-if="isBulkScheduled" type="datetime-local" v-model="bulkScheduleDate" class="text-xs border border-slate-200 rounded-lg p-1.5 bg-white text-slate-700">
 
                                 <button @click="bulkQuickScheduleAll" :disabled="(isBulkScheduled && !bulkScheduleDate)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-700 disabled:opacity-40 transition shadow-sm">
                                     Update
@@ -473,7 +474,7 @@
                                         </div>
                                         <div v-if="node.tags && node.tags.length > 0" class="flex items-center mt-1.5 space-x-1.5">
                                             <span v-for="res in node.tags" class="px-1.5 py-0.5 text-[10px] font-semibold bg-slate-50 text-slate-700 border border-slate-200">{{ res }}</span>
-                                        </div>                                        
+                                        </div>
                                     </td>
                                     <td class="py-3.5 px-4">
                                         <div class="text-slate-700 font-medium">{{ node.agent_version }}</div>
@@ -542,7 +543,7 @@
                                             <a @click="filterBy('package', `${pkg.name}-${pkg.version}-${pkg.release}.${pkg.arch}`)" class="bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full text-xs font-semibold cursor-pointer">
                                                 {{ pkg.affected_nodes_count }} servers
                                             </a>
-                                            <a v-if="getUnqueuedNodes(pkg).length > 0 && getUnqueuedNodes(pkg).length < pkg.affected_nodes_count" 
+                                            <a v-if="getUnqueuedNodes(pkg).length > 0 && getUnqueuedNodes(pkg).length < pkg.affected_nodes_count"
                                                   class="text-[11px] font-medium text-amber-600">
                                                 {{ getUnqueuedNodes(pkg).length }} pending queue
                                             </a>
@@ -550,8 +551,8 @@
                                     </td>
                                     <td class="py-3.5 px-4 text-right">
                                         <template v-if="userRole !== 'user'">
-                                            <button v-if="getUnqueuedNodes(pkg).length > 0" 
-                                                    @click="deployPackageGlobally(pkg)" 
+                                            <button v-if="getUnqueuedNodes(pkg).length > 0"
+                                                    @click="deployPackageGlobally(pkg)"
                                                     class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-700 transition">
                                                 <span v-if="getUnqueuedNodes(pkg).length === pkg.affected_nodes_count">
                                                     Update All ({{ pkg.affected_nodes_count }})
@@ -582,7 +583,7 @@
                             <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Scheduled Queue</h2>
                             <p class="text-sm text-slate-500 mt-1">Pending update jobs enqueued across the fleet awaiting execution.</p>
                         </div>
-                        
+
                         <div v-if="selectedTaskKeys.length > 0 && userRole !== 'user'" class="flex items-center flex-wrap gap-2 bg-indigo-50 p-2 rounded-xl border border-indigo-100">
                             <span class="text-xs font-semibold text-indigo-800 ml-2 mr-2">{{ selectedTaskKeys.length }} selected</span>
                             <button @click="bulkCancelScheduledTasks" class="bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-2 rounded-xl text-xs font-medium shadow-sm transition flex items-center space-x-1.5">
@@ -710,7 +711,7 @@
                             <div class="text-base font-bold text-slate-900 truncate mt-1">{{ selectedNode.fqdn }}</div>
                             <div class="text-xs text-slate-500 font-mono mt-0.5">{{ selectedNode.ip_address }}</div>
                         </div>
-                        
+
                         <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
                             <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Agent Information</div>
                             <div class="text-base font-bold text-slate-900 truncate mt-1">{{ selectedNode.agent_version || 'Unknown' }}</div>
@@ -718,25 +719,25 @@
                                 <span v-for="tag in selectedNode.tags" :key="tag" class="px-2 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 mr-2">{{ tag }}</span>
                             </div>
                         </div>
-                        
+
                         <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
                             <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Platform</div>
                             <div class="text-sm font-semibold text-slate-800 truncate mt-1">{{ selectedNode.os_version }}</div>
                             <div class="text-xs text-slate-500 mt-0.5">Uptime: {{ formatUptime(selectedNode.uptime_seconds) }}</div>
                         </div>
-                        
+
                         <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
                             <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Resources</div>
                             <div class="text-sm font-semibold text-slate-800 mt-1">{{ selectedNode.cpu_cores }} Cores / {{ selectedNode.ram_total_mb }} MB</div>
                             <div class="text-xs text-slate-500 font-mono mt-0.5 truncate">{{ selectedNode.kernel_version }}</div>
                         </div>
-                        
+
                         <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
                             <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Last Agent Task</div>
                             <div class="text-sm font-semibold capitalize mt-1" :class="selectedNode.last_action_status === 'failed' ? 'text-rose-600' : 'text-emerald-600'">{{ selectedNode.last_action_status }}</div>
                             <div class="text-xs text-slate-400 truncate mt-0.5">{{ selectedNode.last_action_message || 'None' }}</div>
                         </div>
-                        
+
                         <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
                             <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Reboot Status</div>
                             <div class="text-sm font-semibold mt-1" :class="selectedNode.needs_reboot ? 'text-amber-600' : 'text-emerald-600'">
@@ -792,15 +793,15 @@
                                     Schedule At
                                 </label>
                                 <input v-if="isScheduled" type="datetime-local" v-model="scheduleDate" class="text-xs border border-slate-200 rounded-lg p-1.5 bg-white text-slate-700">
-                                
-                                <button v-if="selectedNode.available_updates && selectedNode.available_updates.length > 0" 
-                                        @click="scheduleUpdate(selectedPackages)" 
-                                        :disabled="selectedPackages.length === 0 || (isScheduled && !scheduleDate)" 
+
+                                <button v-if="selectedNode.available_updates && selectedNode.available_updates.length > 0"
+                                        @click="scheduleUpdate(selectedPackages)"
+                                        :disabled="selectedPackages.length === 0 || (isScheduled && !scheduleDate)"
                                         class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-700 disabled:opacity-40 transition shadow-sm">
                                     {{ isScheduled ? 'Schedule Update (' + selectedPackages.length + ')' : 'Update Now (' + selectedPackages.length + ')' }}
                                 </button>
-                                <button @click="scheduleRebootTask" 
-                                        :disabled="(isScheduled && !scheduleDate)" 
+                                <button @click="scheduleRebootTask"
+                                        :disabled="(isScheduled && !scheduleDate)"
                                         class="bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-rose-700 disabled:opacity-40 transition shadow-sm">
                                     {{ isScheduled ? 'Schedule Reboot' : 'Reboot Now' }}
                                 </button>
@@ -885,7 +886,7 @@
                                 <label class="text-sm font-semibold text-slate-900">{{ item.label }}</label>
                                 <div class="text-xs font-mono text-indigo-600 mt-0.5">ORBIT_{{ item.key.toUpperCase() }}</div>
                                 <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">{{ item.description }}</p>
-                                
+
                                 <div v-if="['jwt_secret'].includes(item.key)" class="mt-2.5 flex items-start space-x-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200/80 text-amber-800">
                                     <svg class="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
@@ -903,17 +904,17 @@
                                     </span>
                                 </div>
                             </div>
-                            
+
                             <div class="w-full md:w-80">
                                 <div v-if="item.type === 'password'" class="space-y-2">
                                     <div class="relative flex items-center">
-                                        <input :type="showApiToken ? 'text' : 'password'" 
-                                               v-model="settingsForm[item.key]" 
+                                        <input :type="showApiToken ? 'text' : 'password'"
+                                               v-model="settingsForm[item.key]"
                                                readonly
                                                class="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-500 cursor-not-allowed focus:outline-none transition">
-                                        
-                                        <button type="button" 
-                                                @click="showApiToken = !showApiToken" 
+
+                                        <button type="button"
+                                                @click="showApiToken = !showApiToken"
                                                 class="absolute right-2.5 text-slate-400 hover:text-slate-600 focus:outline-none"
                                                 :title="showApiToken ? 'Hide Token' : 'Show Token'">
                                             <svg v-if="showApiToken" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -926,11 +927,11 @@
                                         </button>
                                     </div>
                                 </div>
-                                                                              
-                                <input v-else 
-                                       type="text" 
+
+                                <input v-else
+                                       type="text"
                                        readonly
-                                       v-model="settingsForm[item.key]" 
+                                       v-model="settingsForm[item.key]"
                                        class="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-500 cursor-not-allowed focus:outline-none transition">
                             </div>
                         </div>
@@ -1001,7 +1002,7 @@
                                 <p class="text-sm text-slate-500 mt-1">Linux Fleet Patch Orchestration & Vulnerability Management Console</p>
                             </div>
                         </div>
-                        
+
                         <div class="flex items-center space-x-2">
                             <span :class="systemHealth.colorClass" class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold border transition-colors">
                                 <span :class="systemHealth.dotClass" class="w-2 h-2 rounded-full mr-2 animate-pulse"></span>
@@ -1111,10 +1112,10 @@
                         </button>
                     </div>
                     <div class="relative flex items-center">
-                        <input :type="showNewPassword ? 'text' : 'password'" 
-                               v-model="newUserForm.password" 
+                        <input :type="showNewPassword ? 'text' : 'password'"
+                               v-model="newUserForm.password"
                                @input="newUserForm.isGenerated = false"
-                               required minlength="6" 
+                               required minlength="6"
                                class="w-full pl-3.5 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono">
                         <button type="button" @click="showNewPassword = !showNewPassword" class="absolute right-2.5 text-slate-400 hover:text-slate-600">
                             <svg v-if="showNewPassword" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path></svg>
@@ -1126,9 +1127,9 @@
                 <!-- Campo confirmación (oculto si fue autogenerada) -->
                 <div v-if="!newUserForm.isGenerated">
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Confirm Password</label>
-                    <input :type="showNewPassword ? 'text' : 'password'" 
-                           v-model="newUserForm.confirmPassword" 
-                           required minlength="6" 
+                    <input :type="showNewPassword ? 'text' : 'password'"
+                           v-model="newUserForm.confirmPassword"
+                           required minlength="6"
                            placeholder="Repeat password"
                            class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono">
                     <p v-if="newUserForm.confirmPassword && newUserForm.password !== newUserForm.confirmPassword" class="text-rose-600 text-xs mt-1">
@@ -1163,13 +1164,13 @@
             <form @submit.prevent="submitEditUser" class="p-6 space-y-4">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Username</label>
-                    <input v-model="editUserForm.username" type="text" required 
+                    <input v-model="editUserForm.username" type="text" required
                            :disabled="editUserForm.originalUsername === 'admin'"
                            :class="editUserForm.originalUsername === 'admin' ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-50 text-slate-800'"
                            class="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     <p v-if="editUserForm.originalUsername === 'admin'" class="text-[11px] text-slate-400 mt-1">The primary 'admin' user cannot be renamed.</p>
                 </div>
-                
+
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Role</label>
                     <select v-model="editUserForm.role" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white">
@@ -1188,10 +1189,10 @@
                         </button>
                     </div>
                     <div class="relative flex items-center">
-                        <input :type="showEditPassword ? 'text' : 'password'" 
-                               v-model="editUserForm.password" 
+                        <input :type="showEditPassword ? 'text' : 'password'"
+                               v-model="editUserForm.password"
                                @input="editUserForm.isGenerated = false"
-                               minlength="6" placeholder="Leave blank to keep current" 
+                               minlength="6" placeholder="Leave blank to keep current"
                                class="w-full pl-3.5 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono">
                         <button type="button" @click="showEditPassword = !showEditPassword" class="absolute right-2.5 text-slate-400 hover:text-slate-600">
                             <svg v-if="showEditPassword" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path></svg>
@@ -1203,9 +1204,9 @@
                 <!-- Campo confirmación de edición SIN atributo required -->
                 <div v-if="editUserForm.password && !editUserForm.isGenerated">
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Confirm New Password</label>
-                    <input :type="showEditPassword ? 'text' : 'password'" 
-                           v-model="editUserForm.confirmPassword" 
-                           minlength="6" 
+                    <input :type="showEditPassword ? 'text' : 'password'"
+                           v-model="editUserForm.confirmPassword"
+                           minlength="6"
                            placeholder="Repeat new password"
                            class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono">
                     <p v-if="editUserForm.confirmPassword && editUserForm.password !== editUserForm.confirmPassword" class="text-rose-600 text-xs mt-1">
@@ -1216,8 +1217,8 @@
                 <div class="flex justify-end space-x-2 pt-4">
                     <button type="button" @click="showEditUserModal = false" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800">Cancel</button>
                     <!-- Botón con validación condicional exacta -->
-                    <button type="submit" 
-                            :disabled="isSubmittingUser || (Boolean(editUserForm.password) && !editUserForm.isGenerated && editUserForm.password !== editUserForm.confirmPassword)" 
+                    <button type="submit"
+                            :disabled="isSubmittingUser || (Boolean(editUserForm.password) && !editUserForm.isGenerated && editUserForm.password !== editUserForm.confirmPassword)"
                             class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-sm transition disabled:opacity-50">
                         Save Changes
                     </button>
@@ -1258,7 +1259,7 @@
                 showApiToken: false,
                 settingsForm: {},
                 settingsFeedback: null,
-                
+
                 // Auth & Session
                 loginForm: { username: '', password: '' },
                 authToken: localStorage.getItem('orbit_session') || '',
@@ -1266,7 +1267,7 @@
                 username: localStorage.getItem('orbit_username') || '',
                 userRole: localStorage.getItem('orbit_role') || 'user',
                 loginError: '',
-                
+
                 // Users Management
                 userList: [],
                 showCreateUserModal: false,
@@ -1299,7 +1300,7 @@
                 isBulkScheduled: false,
                 bulkScheduleDate: '',
                 pendingTasks: [],
-                taskResults: [], 
+                taskResults: [],
                 isModalOpen: false,
                 currentLogContent: '',
                 globalTaskResults: [],
@@ -1339,7 +1340,7 @@
             },
             totalSecurityUpdates() {
                 const uniquePatches = new Set();
-                
+
                 this.nodes.forEach(n => {
                     if (!n.available_updates) return;
                     n.available_updates.forEach(u => {
@@ -1351,7 +1352,7 @@
                         // }
                     });
                 });
-                
+
                 return uniquePatches.size;
             },
             <!-- totalSecurityUpdates() { -->
@@ -1365,7 +1366,7 @@
             packageNodes() {
                 return this.nodes.filter(n => {
                         if (!n.available_updates) return false;
-                        return n.available_updates.some(u => 
+                        return n.available_updates.some(u =>
                             `${u.name}-${u.version}-${u.release}.${u.arch}` === this.filterPattern
                         );
                     });
@@ -1405,7 +1406,7 @@
             agentNodes() { if (!this.nodes) return []; return this.nodes.filter(n => n.agent_version === this.filterPattern); },
             filteredNodes() {
                 let result = this.nodes;
-                
+
                 if (this.filterMode === 'security') result = result.filter(n => this.hasSecurityUpdates(n.available_updates));
                 else if (this.filterMode === 'scheduled') result = this.scheduledNodes;
                 else if (this.filterMode === 'failed') result = this.failedNodes;
@@ -1423,7 +1424,7 @@
                     const term = this.searchHostname.toLowerCase();
                     result = result.filter(n => (n.fqdn || '').toLowerCase().includes(term));
                 }
-                
+
                 return result;
             },
             sortedFilteredNodes() {
@@ -1476,9 +1477,9 @@
             },
             nodes: {
                 deep: true,
-                handler() { 
+                handler() {
                     if (this.currentView === 'dashboard') {
-                        this.$nextTick(() => this.renderCharts()); 
+                        this.$nextTick(() => this.renderCharts());
                     }
                 }
             }
@@ -1495,11 +1496,11 @@
                 // 1. Convertir el array de nodos a un string JSON formateado (2 espacios de indentación)
                 // NOTA: Si usas una variable computada para filtrar (ej. this.filteredNodes), cámbialo aquí.
                 const dataStr = JSON.stringify(this.sortedFilteredNodes, null, 2);
-                
+
                 // 2. Crear un objeto Blob nativo y su URL temporal
                 const blob = new Blob([dataStr], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
-                
+
                 // 3. Forzar la descarga dinámicamente
                 this.triggerDownload(url, `orbit_servers_${this.getFormattedDate()}.json`);
             },
@@ -1517,10 +1518,10 @@
                 // 2. Mapear los datos de cada servidor aponiendo comillas y escapando valores
                 const rows = this.sortedFilteredNodes.map(n => {
                     const pendingUpdatesCount = n.available_updates ? n.available_updates.length : 0;
-                    const secUpdatesCount = n.available_updates 
-                        ? n.available_updates.filter(u => u.is_security === true || String(u.is_security) === 'true').length 
+                    const secUpdatesCount = n.available_updates
+                        ? n.available_updates.filter(u => u.is_security === true || String(u.is_security) === 'true').length
                         : 0;
-                    
+
                     const rawRow = [
                         n.uuid || '',
                         n.fqdn || '',
@@ -1547,7 +1548,7 @@
                 // 4. Descargar incluyendo el BOM (Byte Order Mark) para que Excel reconozca UTF-8 al instante
                 const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
-                
+
                 this.triggerDownload(url, `orbit_servers_${this.getFormattedDate()}.csv`);
             },
 
@@ -1559,7 +1560,7 @@
                 link.style.display = "none";
                 document.body.appendChild(link);
                 link.click();
-                
+
                 // Limpieza de memoria (Garbage Collection del navegador)
                 document.body.removeChild(link);
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -1625,8 +1626,8 @@
                         const err = await res.json();
                         this.loginError = err.detail || 'Invalid username or password.';
                     }
-                } catch (e) { 
-                    this.loginError = 'Connection error with Orbit server.'; 
+                } catch (e) {
+                    this.loginError = 'Connection error with Orbit server.';
                 } finally {
                     this.isLoading = false;
                 }
@@ -1842,7 +1843,7 @@
 
                 const nodesToUpdate = this.nodes.filter(n => this.selectedNodeUuids.includes(n.uuid) && n.available_updates && n.available_updates.length > 0);
                 const sched = this.isBulkScheduled && this.bulkScheduleDate ? new Date(this.bulkScheduleDate).toISOString() : null;
-                
+
                 try {
                     const promises = nodesToUpdate.map(node => {
                         return this.apiFetch(`/api/v1/admin/nodes/${node.uuid}/schedule_task`, {
@@ -1850,7 +1851,7 @@
                             body: { action: 'update', packages: node.available_updates.map(p => p.name), scheduled_at: sched }
                         });
                     });
-                    
+
                     await Promise.all(promises);
                     this.resetSelection();
                     await this.fetchNodes();
@@ -1865,7 +1866,7 @@
                     const promises = nodesToCancel.map(node => {
                         return this.apiFetch(`/api/v1/admin/nodes/${node.uuid}/tasks`, { method: 'DELETE' });
                     });
-                    
+
                     await Promise.all(promises);
                     this.resetSelection();
                     await this.fetchNodes();
@@ -1944,7 +1945,7 @@
                     const promises = nodesSelected.map(node => {
                         return this.apiFetch(`/api/v1/admin/nodes/${node.uuid}`, { method: 'DELETE' });
                     });
-                    
+
                     await Promise.all(promises);
                     this.resetSelection();
                     await this.fetchNodes();
@@ -1976,8 +1977,8 @@
                 } catch (e) { console.error(e); }
             },
             toggleAllScheduledTasks(e) {
-                this.selectedTaskKeys = e.target.checked 
-                    ? this.sortedAllScheduledTasks.map(t => t.node_uuid + '|' + t.task_id) 
+                this.selectedTaskKeys = e.target.checked
+                    ? this.sortedAllScheduledTasks.map(t => t.node_uuid + '|' + t.task_id)
                     : [];
             },
             async bulkCancelScheduledTasks() {
@@ -2055,9 +2056,9 @@
                     return pkg.affected_nodes;
                 }
                 return pkg.affected_nodes.filter(node => {
-                    const hasTask = this.allScheduledTasks.some(task => 
-                        task.node_uuid === node.uuid && 
-                        task.packages && 
+                    const hasTask = this.allScheduledTasks.some(task =>
+                        task.node_uuid === node.uuid &&
+                        task.packages &&
                         task.packages.includes(pkg.name)
                     );
                     return !hasTask;
@@ -2078,10 +2079,10 @@
                 try {
                     const res = await this.apiFetch('/api/v1/admin/bulk/schedule_task', {
                         method: 'POST',
-                        body: { 
-                            node_ids: unqueuedNodes.map(n => n.uuid), 
-                            action: 'update', 
-                            packages: [pkg.name] 
+                        body: {
+                            node_ids: unqueuedNodes.map(n => n.uuid),
+                            action: 'update',
+                            packages: [pkg.name]
                         }
                     });
                     if (res.ok) {
@@ -2232,7 +2233,7 @@
 
                 this.$nextTick(() => {
                     this.destroyCharts();
-                
+
                     const canvasOs = document.getElementById('osChart');
                     const canvasUp = document.getElementById('updatesChart');
                     const canvasAgent = document.getElementById('agentChart');
@@ -2294,14 +2295,14 @@
                     <!-- } -->
 
                     // Mapear los nodos y contar los niveles de seguridad
-                    let vulnNodes = this.nodes.filter(n => 
-                        n.available_updates && n.available_updates.some(u => 
+                    let vulnNodes = this.nodes.filter(n =>
+                        n.available_updates && n.available_updates.some(u =>
                             u.is_security === true || u.is_security === 'true' || u.is_security === 1
                         )
                     ).map(n => {
                         let counts = { CRITICAL: 0, IMPORTANT: 0, MODERATE: 0, LOW: 0, NONE: 0 };
                         let totalSec = 0;
-                        
+
                         n.available_updates.forEach(u => {
                             const isSec = u.is_security === true || u.is_security === 'true' || u.is_security === 1;
                             if (isSec) {
@@ -2317,7 +2318,7 @@
                                 }
                             }
                         });
-                        
+
                         return {
                             name: n.fqdn || n.uuid.substring(0, 8),
                             counts: counts,
@@ -2380,11 +2381,11 @@
                             responsive: true,
                             maintainAspectRatio: false,
                             scales: {
-                                x: { 
+                                x: {
                                     stacked: true,
                                     grid: { display: false }
                                 },
-                                y: { 
+                                y: {
                                     stacked: true,
                                     beginAtZero: true,
                                     border: { dash: [4, 4] },
@@ -2393,9 +2394,9 @@
                                 }
                             },
                             plugins: {
-                                legend: { 
-                                    position: 'bottom', 
-                                    labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } 
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } }
                                 },
                                 tooltip: {
                                     mode: 'index',
@@ -2406,15 +2407,15 @@
                                 const target = event.native ? event.native.target : event.target;
                                 target.style.cursor = chartElement[0] ? 'pointer' : 'default';
                             },
-                            
+
                             onClick: (event, elements, chart) => {
                                 if (elements && elements.length > 0) {
                                     // Obtener el índice de la columna pulsada
                                     const dataIndex = elements[0].index;
-                                    
+
                                     // Extraer el nombre del host (etiqueta del eje X)
                                     const hostName = chart.data.labels[dataIndex];
-                                    
+
                                     // Llamar al método de Vue pasando el nombre del host
                                     this.viewNodeFromFqdn(hostName);
                                 }
@@ -2491,16 +2492,16 @@
                             n.available_updates.forEach(u => {
                                 // Generar clave única identificativa igual que en el backend (Advisory)
                                 const pkgKey = `${u.name}-${u.version}-${u.release}.${u.arch}`;
-                                
+
                                 if (!uniquePackages.has(pkgKey)) {
                                     // Extraer el nivel, forzando mayúsculas. Por defecto NONE.
                                     let lvl = (u.security_level || 'NONE').toUpperCase();
-                                    
+
                                     // Retrocompatibilidad: Si el agente es viejo y solo mandó is_security: true
                                     if (lvl === 'NONE' && (u.is_security === true || u.is_security === 'true')) {
                                         lvl = 'MODERATE';
                                     }
-                                    
+
                                     uniquePackages.set(pkgKey, lvl);
                                 }
                             });
@@ -2524,7 +2525,7 @@
                             data: {
                                 labels: ['None', 'Low', 'Moderate', 'Important', 'Critical'],
                                 datasets: [{
-                                    data: [                                      
+                                    data: [
                                         severityCounts.NONE,
                                         severityCounts.LOW,
                                         severityCounts.MODERATE,
@@ -2545,15 +2546,15 @@
                                     const target = event.native ? event.native.target : event.target;
                                     target.style.cursor = chartElement[0] ? 'pointer' : 'default';
                                 },
-                                
+
                                 onClick: (event, elements, chart) => {
                                     if (elements && elements.length > 0) {
                                         // Obtener el índice de la columna pulsada
                                         const dataIndex = elements[0].index;
-                                        
+
                                         // Extraer el nombre del host (etiqueta del eje X)
                                         const severity = chart.data.labels[dataIndex];
-                                        
+
                                         // Llamar al método de Vue pasando el nombre del host
                                         this.filterBy('severity',severity.toUpperCase());
                                     }

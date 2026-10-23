@@ -6,6 +6,7 @@ __pycache__/
 
 # Binarios externos y pesados
 tailwindcss-linux-x64
+update-third-party.sh
 *.bin
 
 # Directorios de trabajo y temporales
