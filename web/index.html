@@ -33,7 +33,6 @@
             src: url('assets/fonts/JetBrainsMono-Variable.woff2') format('woff2');
         }
 
-        /* Estilos originales de tu aplicación */
         body { font-family: 'Inter', sans-serif; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
 
@@ -261,7 +260,7 @@
             </header>
 
             <!-- SCROLLABLE CONTENT BODY -->
-            <main class="flex-grow overflow-y-auto custom-scrollbar p-6 lg:p-8">
+            <main ref="mainContent" class="flex-grow overflow-y-auto custom-scrollbar p-6 lg:p-8">
 
                 <!-- VIEW 0: GLOBAL DASHBOARD -->
                 <div v-show="currentView === 'dashboard'">
@@ -1480,6 +1479,11 @@
         },
         watch: {
             currentView(val) {
+                this.$nextTick(() => {
+                    if (this.$refs.mainContent) {
+                        this.$refs.mainContent.scrollTop = 0;
+                    }
+                });
                 if (this.isAuthenticated) {
                     this.refreshCurrentView();
                 }
