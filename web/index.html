@@ -2320,26 +2320,21 @@
 
                     // Mapear los nodos y contar los niveles de seguridad
                     let vulnNodes = this.nodes.filter(n =>
-                        n.available_updates && n.available_updates.some(u =>
-                            u.is_security === true || u.is_security === 'true' || u.is_security === 1
-                        )
+                        n.available_updates && n.available_updates.length > 0
                     ).map(n => {
                         let counts = { CRITICAL: 0, IMPORTANT: 0, MODERATE: 0, LOW: 0, NONE: 0 };
                         let totalSec = 0;
 
                         n.available_updates.forEach(u => {
-                            const isSec = u.is_security === true || u.is_security === 'true' || u.is_security === 1;
-                            if (isSec) {
-                                // Retrocompatibilidad: si no tiene security_level (agente viejo), asumimos NONE
-                                let lvl = (u.security_level || 'NONE').toUpperCase();
-                                if (counts[lvl] !== undefined) {
-                                    counts[lvl]++;
-                                    totalSec++;
-                                } else {
-                                    // Si viene un valor anómalo, lo metemos en none
-                                    counts.NONE++;
-                                    totalSec++;
-                                }
+                            // Retrocompatibilidad: si no tiene security_level (agente viejo), asumimos NONE
+                            let lvl = (u.security_level || 'NONE').toUpperCase();
+                            if (counts[lvl] !== undefined) {
+                                counts[lvl]++;
+                                totalSec++;
+                            } else {
+                                // Si viene un valor anómalo, lo metemos en none
+                                counts.NONE++;
+                                totalSec++;
                             }
                         });
 
